@@ -109,3 +109,16 @@ class ExportRequest(BaseModel):
 class ExportResponse(BaseModel):
     final_flattened_url: str
     download_url: str
+
+class BatchGenerationRequest(BaseModel):
+    campaign_id: str
+    event: Event
+    artists: List[Artist]
+    style_variations: List[StylePrefs]  # Multiple style variations
+    batch_size: Optional[int] = 3
+
+class BatchGenerationResponse(BaseModel):
+    batch_id: str
+    campaign_id: str
+    results: List[StartDesignResponse]
+    processing_time: float

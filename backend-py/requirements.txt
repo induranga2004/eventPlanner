@@ -5,9 +5,9 @@ openai
 python-dotenv
 cloudinary
 pydantic>=2
-cloudinary
 Pillow
 requests
 huggingface_hub>=0.24
+numpy
 
 # pip install -r requirements.txt

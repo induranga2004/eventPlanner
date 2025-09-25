@@ -4,11 +4,13 @@ import requests
 
 from models.design import (
     StartDesignRequest, StartDesignResponse, Variant, TextOverlay, TextItem, Bounds, CutoutAsset,
-    HarmonizeRequest, HarmonizeResponse
+    HarmonizeRequest, HarmonizeResponse, BatchGenerationRequest, BatchGenerationResponse
 )
 from services.cloudinary_store import init_cloudinary, upload_image_bytes, public_id, save_manifest
 from services.ai_flux import gradient_background, harmonize_img2img, generate_background
 from services.context_manager import design_context
+from services.quality_analyzer import analyze_generated_image
+from services.text_optimizer import optimize_text_placement
 from prompts.design_prompts import build_harmonize_prompt, build_bg_prompt
 
 router = APIRouter()
@@ -131,7 +133,8 @@ def harmonize(payload: HarmonizeRequest):
         cutouts=cutouts_data,
         prompt=harm_prompt,
         strength=0.55,
-        seed=payload.seed_harmonize
+        seed=payload.seed_harmonize,
+        mood=context.get("mood", "neon")  # Pass mood for advanced processing
     )
 
     url = upload_image_bytes(comp_bytes, public_id(payload.campaign_id or "demo", payload.render_id, f"harmonized_{payload.size}"))
@@ -141,4 +144,75 @@ def harmonize(payload: HarmonizeRequest):
         size=payload.size,
         l2_composite_url=url,
         meta={"model_harmonize": "FLUX.1-Kontext-dev", "seed_harmonize": str(payload.seed_harmonize or "none")}
+    )
+
+@router.post("/analyze-quality")
+def analyze_quality(payload: dict):
+    """Analyze the quality of a generated image"""
+    image_url = payload.get("image_url")
+    if not image_url:
+        raise HTTPException(400, "image_url is required")
+    
+    analysis = analyze_generated_image(image_url)
+    
+    return {
+        "image_url": image_url,
+        "analysis": analysis,
+        "timestamp": payload.get("timestamp", "now")
+    }
+
+@router.post("/optimize-text-placement")
+def optimize_text(payload: dict):
+    """Optimize text placement based on background composition"""
+    bg_url = payload.get("bg_url")
+    size_type = payload.get("size", "square")
+    
+    if not bg_url:
+        raise HTTPException(400, "bg_url is required")
+    
+    optimization = optimize_text_placement(bg_url, size_type)
+    
+    return {
+        "bg_url": bg_url,
+        "size": size_type,
+        "optimization": optimization,
+        "timestamp": payload.get("timestamp", "now")
+    }
+
+@router.post("/batch-generate", response_model=BatchGenerationResponse)
+def batch_generate(payload: BatchGenerationRequest):
+    """Generate multiple design variations simultaneously"""
+    import time
+    start_time = time.time()
+    
+    batch_id = str(uuid4())
+    results = []
+    
+    # Process each style variation
+    for i, style_prefs in enumerate(payload.style_variations[:payload.batch_size]):
+        try:
+            # Create individual request
+            individual_request = StartDesignRequest(
+                campaign_id=f"{payload.campaign_id}_batch_{batch_id}_{i}",
+                event=payload.event,
+                artists=payload.artists,
+                style_prefs=style_prefs
+            )
+            
+            # Generate design
+            result = start_design(individual_request)
+            results.append(result)
+            
+        except Exception as e:
+            # Log error but continue with other variations
+            print(f"Batch generation failed for variation {i}: {e}")
+            continue
+    
+    processing_time = time.time() - start_time
+    
+    return BatchGenerationResponse(
+        batch_id=batch_id,
+        campaign_id=payload.campaign_id,
+        results=results,
+        processing_time=processing_time
     )
