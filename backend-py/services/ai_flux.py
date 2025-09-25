@@ -2,6 +2,7 @@ import os, io
 from typing import List, Tuple, Optional
 from PIL import Image, ImageDraw, ImageFilter
 from huggingface_hub import InferenceClient
+from config.ai_config import AIConfig, get_preset
 
 AI_ENABLE_FLUX = os.getenv("AI_ENABLE_FLUX", "false").lower() == "true"
 _HF_TOKEN = os.environ.get("HF_TOKEN")
@@ -31,6 +32,33 @@ def _gradient(size, palette: list[str]) -> Image.Image:
             draw.line([(0,y),(w,y)], fill=(r,g,b))
     return img
 
+def generate_background(prompt: str, size_name: str, seed: Optional[int] = None) -> bytes:
+    """Generate AI background using FLUX.1-dev with configurable parameters"""
+    size = (2048, 2048) if size_name == "square" else (1080, 1920)
+    
+    if not (_client and AI_ENABLE_FLUX):
+        # Fallback to gradient
+        return gradient_background(size_name, ["#222222", "#555555"])
+    
+    try:
+        # Get configuration parameters
+        bg_params = AIConfig.get_bg_params()
+        enhanced_prompt = AIConfig.enhance_prompt(prompt)
+        
+        out = _client.text_to_image(
+            prompt=enhanced_prompt,
+            model="black-forest-labs/FLUX.1-dev",
+            width=size[0],
+            height=size[1],
+            guidance_scale=bg_params["guidance_scale"],
+            num_inference_steps=bg_params["num_inference_steps"],
+            seed=seed
+        )
+        return _to_png_bytes(out)
+    except Exception as e:
+        print(f"Background generation failed: {e}, using gradient fallback")
+        return gradient_background(size_name, ["#222222", "#555555"])
+
 def gradient_background(size_name: str, palette: list[str]) -> bytes:
     size = (2048, 2048) if size_name == "square" else (1080, 1920)
     return _to_png_bytes(_gradient(size, palette))
@@ -54,8 +82,10 @@ def harmonize_img2img(
     bg_bytes: bytes,
     cutouts: List[Tuple[bytes, Tuple[int,int,int,int]]],
     prompt: str,
-    strength: float = 0.55,
-    seed: Optional[int] = None
+    strength: float = 0.45,  # Reduced for more preservation
+    seed: Optional[int] = None,
+    guidance_scale: float = 4.0,  # Slightly higher for better prompt adherence
+    num_inference_steps: int = 28  # More steps for better quality
 ) -> bytes:
     """Merge L1+L2 via FLUX.1-Kontext-dev (i2i). Falls back to non-AI composite if disabled."""
     bg = Image.open(io.BytesIO(bg_bytes)).convert("RGBA")
@@ -65,15 +95,24 @@ def harmonize_img2img(
     if not (_client and AI_ENABLE_FLUX):
         return _to_png_bytes(init)
 
-    out = _client.image_to_image(
-        prompt=prompt,
-        image=init,  # PIL.Image
-        model="black-forest-labs/FLUX.1-Kontext-dev",
-        strength=strength,
-        guidance_scale=3.5,
-        num_inference_steps=24,
-        seed=seed
-    )
-    if out.size != init.size:
-        out = out.resize(init.size)
-    return _to_png_bytes(out)
+    try:
+        # Get configuration parameters
+        harm_params = AIConfig.get_harmonization_params()
+        enhanced_prompt = AIConfig.enhance_prompt(prompt)
+        
+        # Enhanced parameters for better accuracy and quality
+        out = _client.image_to_image(
+            prompt=enhanced_prompt,
+            image=init,  # PIL.Image
+            model="black-forest-labs/FLUX.1-Kontext-dev",
+            strength=harm_params["strength"],
+            guidance_scale=harm_params["guidance_scale"],
+            num_inference_steps=harm_params["num_inference_steps"],
+            seed=seed
+        )
+        if out.size != init.size:
+            out = out.resize(init.size, Image.Resampling.LANCZOS)  # Better resampling
+        return _to_png_bytes(out)
+    except Exception as e:
+        print(f"AI harmonization failed: {e}, falling back to composite")
+        return _to_png_bytes(init)  # Fallback to non-AI composite

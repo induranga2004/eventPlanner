@@ -7,8 +7,9 @@ from models.design import (
     HarmonizeRequest, HarmonizeResponse
 )
 from services.cloudinary_store import init_cloudinary, upload_image_bytes, public_id, save_manifest
-from services.ai_flux import gradient_background, harmonize_img2img
-from prompts.design_prompts import build_harmonize_prompt
+from services.ai_flux import gradient_background, harmonize_img2img, generate_background
+from services.context_manager import design_context
+from prompts.design_prompts import build_harmonize_prompt, build_bg_prompt
 
 router = APIRouter()
 init_cloudinary()
@@ -23,10 +24,27 @@ def start_design(payload: StartDesignRequest):
     sizes = payload.style_prefs.sizes or ["square"]
     palette = payload.style_prefs.palette or ["#222222", "#555555"]
 
+    # Save context for later use in harmonization
+    design_context.save_context(render_id, payload.event, payload.style_prefs)
+
     variants: list[Variant] = []
     for sz in sizes:
-        # L1 background (gradient fallback for MVP)
-        bg_bytes = gradient_background(sz, palette)
+        # L1 background - try AI generation first, fallback to gradient
+        try:
+            bg_prompt = build_bg_prompt(
+                title=payload.event.title,
+                city=payload.event.city,
+                genre=payload.event.genre,
+                mood=payload.style_prefs.mood or "neon",
+                palette=palette
+            )
+            bg_bytes = generate_background(bg_prompt, sz)
+            bg_model = "FLUX.1-dev"
+        except Exception as e:
+            print(f"AI background generation failed: {e}, using gradient")
+            bg_bytes = gradient_background(sz, palette)
+            bg_model = "gradient_fallback"
+        
         bg_url = upload_image_bytes(bg_bytes, public_id(campaign_id, render_id, f"bg_{sz}"))
 
         # Default L3 text overlay
@@ -57,8 +75,8 @@ def start_design(payload: StartDesignRequest):
             assets={"cutouts": cutouts},
             l3_text_overlay=text_overlay,
             meta={
-                "seed_bg": "gradient",
-                "model_bg": "gradient_fallback",
+                "seed_bg": "ai_generated",
+                "model_bg": bg_model,
                 "palette": ",".join(palette),
                 "mood": payload.style_prefs.mood or "neon"
             }
@@ -94,8 +112,19 @@ def harmonize(payload: HarmonizeRequest):
             raise HTTPException(400, f"Failed to fetch cutout {sc.artist_id}")
         cutouts_data.append((r.content, sc.bbox))
 
-    # Build harmonize prompt (you can enrich with city/mood later by reading saved manifest)
-    harm_prompt = build_harmonize_prompt(city=None, mood=None)
+    # Build harmonize prompt with saved event context for better accuracy
+    try:
+        context = design_context.extract_prompt_context(payload.render_id)
+        harm_prompt = build_harmonize_prompt(
+            city=context["city"], 
+            mood=context["mood"], 
+            genre=context["genre"], 
+            palette=context["palette"]
+        )
+    except Exception as e:
+        print(f"Context loading failed: {e}, using default prompt")
+        # Fallback to simpler prompt if context loading fails
+        harm_prompt = build_harmonize_prompt(city=None, mood=None)
 
     comp_bytes = harmonize_img2img(
         bg_bytes=bg_bytes,
