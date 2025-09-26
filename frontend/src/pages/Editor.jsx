@@ -29,7 +29,7 @@ export default function Editor() {
       artists: (selectedArtists.length ? selectedArtists : [
         { id: 'a1', name: 'Lead Artist', cutout_url: 'https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png' }
       ]).map((it, idx) => ({ id: it.id || `a${idx+1}`, name: it.label || `Artist ${idx+1}`, cutout_url: it.raw || it.view || it.url })),
-      style_prefs: { mood: 'neon', palette: ['#9D00FF', '#00FFD1'], sizes: ['square'] }
+      style_prefs: { mood: 'minimal', palette: ['#2563eb', '#7c3aed'], sizes: ['square'] }
     }
     const { data } = await api.post('/api/design/start', payload)
     setStartResp(data)

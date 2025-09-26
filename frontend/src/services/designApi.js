@@ -9,4 +9,6 @@ export const DesignAPI = {
   start: (payload) => api.post('/api/design/start', payload).then(r => r.data),
   harmonize: (payload) => api.post('/api/design/harmonize', payload).then(r => r.data),
   listArtists: (linkOrId) => api.get('/api/design/artists', { params: { link: linkOrId } }).then(r => r.data),
+  uploadImage: (payload) => api.post('/api/design/upload', payload).then(r => r.data),
+  optimizeText: (payload) => api.post('/api/design/optimize-text-placement', payload).then(r => r.data),
 }

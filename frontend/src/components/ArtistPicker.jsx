@@ -2,31 +2,35 @@ import React, { useEffect, useState } from 'react'
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Grid, Box, CircularProgress, Checkbox, Typography } from '@mui/material'
 import { DesignAPI } from '../services/designApi'
 
-export default function ArtistPicker({ open, onClose, onConfirm, defaultLink = '13ttHg4UfqtrR67m0MH_K2XmzsO36Gxrz' }) {
-	const [link, setLink] = useState(defaultLink)
-	const [loading, setLoading] = useState(false)
-	const [error, setError] = useState(null)
-	const [items, setItems] = useState([])
-	const [selected, setSelected] = useState({})
-		const [manualUrl, setManualUrl] = useState("")
+export default function ArtistPicker({ open, onClose, onConfirm, defaultLink = '13ttHg4UfqtrR67m0MH_K2XmzsO36Gxrz', singleSelect = false }) {
+  const [link, setLink] = useState(defaultLink)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [items, setItems] = useState([])
+  const [selected, setSelected] = useState({})
+  const [manualUrl, setManualUrl] = useState("")
 
-	useEffect(() => {
-		if (!open) return
-		setError(null)
-		setLoading(true)
-		DesignAPI.listArtists(link)
-			.then(data => {
-				setItems(data.items || [])
-			})
-			.catch(e => setError(String(e)))
-			.finally(() => setLoading(false))
-	}, [open, link])
+  useEffect(() => {
+    if (!open) return
+    setError(null)
+    setLoading(true)
+    DesignAPI.listArtists(link)
+      .then(data => {
+        setItems(data.items || [])
+      })
+      .catch(e => setError(String(e)))
+      .finally(() => setLoading(false))
+  }, [open, link])
 
-	const toggle = (id) => {
-		setSelected(prev => ({ ...prev, [id]: !prev[id] }))
-	}
+  const toggle = (id) => {
+    if (singleSelect) {
+      setSelected({ [id]: true })
+    } else {
+      setSelected(prev => ({ ...prev, [id]: !prev[id] }))
+    }
+  }
 
-	const handleConfirm = () => {
+  const handleConfirm = () => {
 		const chosen = items.filter(it => selected[it.id])
 		onConfirm?.(chosen)
 	}

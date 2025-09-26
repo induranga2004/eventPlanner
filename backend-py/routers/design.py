@@ -1,9 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 import re
+import base64
+import io
 from uuid import uuid4
 import requests
 from urllib.parse import urlparse
+from PIL import Image
 
 from models.design import (
     StartDesignRequest, StartDesignResponse, Variant, TextOverlay, TextItem, Bounds, CutoutAsset,
@@ -216,6 +219,47 @@ def drive_image(id: str, size: int = Query(800, ge=64, le=4000)):
         except requests.exceptions.RequestException:
             continue
     raise HTTPException(404, "Image not found or not publicly accessible")
+
+@router.post("/upload")
+def upload_image(payload: dict):
+    """Upload a base64-encoded image to Cloudinary.
+    Expects: {"image": "data:image/png;base64,iVBOR...", "campaign_id": "...", "name": "..."}
+    Returns: {"url": "https://...", "public_id": "..."}
+    """
+    image_data = payload.get("image", "")
+    campaign_id = payload.get("campaign_id", "temp")
+    name = payload.get("name", "upload")
+    
+    if not image_data.startswith("data:image/"):
+        raise HTTPException(422, "Invalid image format. Expected base64 data URL.")
+    
+    # Extract base64 content
+    try:
+        header, data = image_data.split(",", 1)
+        img_bytes = base64.b64decode(data)
+        
+        # Validate it's a real image
+        img = Image.open(io.BytesIO(img_bytes))
+        
+        # Re-encode as PNG for consistency
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        png_bytes = buf.getvalue()
+        
+        # Upload to Cloudinary
+        render_id = str(uuid4())[:8]
+        public_id_str = public_id(campaign_id, render_id, name)
+        url = upload_image_bytes(png_bytes, public_id_str, "png")
+        
+        return {
+            "url": url,
+            "public_id": public_id_str,
+            "size": len(png_bytes),
+            "dimensions": f"{img.width}x{img.height}"
+        }
+        
+    except Exception as e:
+        raise HTTPException(422, f"Failed to process image: {str(e)}")
 
 @router.post("/harmonize", response_model=HarmonizeResponse)
 def harmonize(payload: HarmonizeRequest):
