@@ -17,9 +17,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Divider,
-  TextField,
-  InputAdornment
+  Divider
 } from '@mui/material';
 import {
   Palette,
@@ -31,12 +29,10 @@ import {
   Settings,
   Menu,
   Close,
-  GetApp,
-  Search,
-  Send
+  GetApp
 } from '@mui/icons-material';
 
-import CanvasEditor from './FastCanvas';
+import CanvasEditor from './CanvasEditorSimple';
 import GoogleFontsPanel from './GoogleFontsPanel';
 import IntelligentLayoutSuggestions from './IntelligentLayoutSuggestions';
 import ExportPanel from '../ExportPanel';
@@ -45,9 +41,6 @@ import ColorPalettePanel from '../ColorPalettePanel';
 // API integration for Phase 1 intelligence
 const fetchIntelligenceAnalysis = async (query, context = 'design', language = 'mixed') => {
   try {
-    console.log(`Making API request to: http://localhost:8000/api/intelligence/analyze`);
-    console.log(`Query: ${query}, Context: ${context}, Language: ${language}`);
-    
     const response = await fetch('http://localhost:8000/api/intelligence/analyze', {
       method: 'POST',
       headers: {
@@ -60,28 +53,14 @@ const fetchIntelligenceAnalysis = async (query, context = 'design', language = '
       })
     });
 
-    console.log(`Response status: ${response.status}`);
-
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log('API Response:', data);
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Failed to fetch intelligence analysis:', error);
-    return {
-      original_query: query,
-      cultural_analysis: {
-        confidence_score: 0.3,
-        themes: ['traditional', 'cultural', 'local'],
-        design_strategy: {
-          typography: { primary_font: 'Inter' },
-          color_palette: { primary_colors: ['#2E8B57', '#FFD700'] }
-        }
-      }
-    };
+    return null;
   }
 };
 
@@ -94,7 +73,6 @@ const AdvancedDesignEditor = () => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [designQuery, setDesignQuery] = useState('');
-  const [customQuery, setCustomQuery] = useState('');
 
   // Sample queries for testing
   const sampleQueries = [
@@ -392,41 +370,6 @@ const AdvancedDesignEditor = () => {
               🧠 Analyzing cultural context: "{designQuery}"...
             </Alert>
           )}
-
-          {/* Cultural Query Input */}
-          <Box sx={{ p: 2, backgroundColor: 'grey.50' }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Enter cultural query: mahinda rajapaksa, vesak festival, sri lankan independence..."
-              value={customQuery}
-              onChange={(e) => setCustomQuery(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && customQuery.trim()) {
-                  handleIntelligentAnalysis(customQuery);
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Psychology color="primary" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => customQuery.trim() && handleIntelligentAnalysis(customQuery)}
-                      disabled={!customQuery.trim() || loading}
-                    >
-                      <Send />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-              helperText="🧠 Enter Sri Lankan cultural, political, or religious terms for intelligent design suggestions"
-            />
-          </Box>
 
           <Box sx={{ flex: 1, p: 2 }}>
             <CanvasEditor
