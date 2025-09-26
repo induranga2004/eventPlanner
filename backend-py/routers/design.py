@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+import re
 from uuid import uuid4
 import requests
 
@@ -97,8 +98,19 @@ def start_design(payload: StartDesignRequest):
 
 @router.post("/harmonize", response_model=HarmonizeResponse)
 def harmonize(payload: HarmonizeRequest):
+    # Basic validation for bg_url to catch placeholders or missing chaining
+    if not payload.bg_url:
+        raise HTTPException(422, "bg_url is required. Run 'Design • Start (L1 Background)' first or provide a direct image URL.")
+    if "REPLACE_WITH" in payload.bg_url or not re.match(r"^https?://", payload.bg_url):
+        raise HTTPException(
+            422,
+            "bg_url looks invalid. Ensure it is a full http(s) URL. If you're using the Postman collection, run 'Design • Start (L1 Background)' first so it sets {{bg_url}} automatically."
+        )
     # Fetch background
-    bg_resp = requests.get(payload.bg_url, timeout=60)
+    try:
+        bg_resp = requests.get(payload.bg_url, timeout=60)
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(422, f"Failed to fetch background image: {e}")
     if bg_resp.status_code != 200:
         raise HTTPException(400, "Failed to fetch background image")
     bg_bytes = bg_resp.content
@@ -115,6 +127,8 @@ def harmonize(payload: HarmonizeRequest):
         cutouts_data.append((r.content, sc.bbox))
 
     # Build harmonize prompt with saved event context for better accuracy
+    # Default context in case extraction fails for any reason
+    context = {"city": None, "mood": "neon", "genre": None, "palette": ["#9D00FF", "#00FFD1"]}
     try:
         context = design_context.extract_prompt_context(payload.render_id)
         harm_prompt = build_harmonize_prompt(

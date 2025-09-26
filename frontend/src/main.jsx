@@ -2,32 +2,25 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material'
-const SignIn = React.lazy(() => import('./auth/SignIn.jsx'))
-const SignUp = React.lazy(() => import('./auth/SignUp.jsx'))
-const Profile = React.lazy(() => import('./pages/Profile.jsx'))
-const AdvancedDesignEditor = React.lazy(() => import('./components/AdvancedCanvas/AdvancedDesignEditor.jsx'))
+
+const Home = React.lazy(() => import('./pages/Home.jsx'))
+const Editor = React.lazy(() => import('./pages/Editor.jsx'))
+const Health = React.lazy(() => import('./pages/Health.jsx'))
 
 const theme = createTheme({
   palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
+    mode: 'light',
+    primary: { main: '#1976d2' },
+    secondary: { main: '#6a1b9a' },
   },
-  typography: {
-    fontFamily: 'Inter, system-ui, sans-serif',
-  },
+  typography: { fontFamily: 'Inter, system-ui, sans-serif' },
 })
 
 const router = createBrowserRouter([
-  { path: '/', element: <SignIn /> },
-  { path: '/login', element: <SignIn /> },
-  { path: '/register', element: <SignUp /> },
-  { path: '/me', element: <Profile /> },
-  { path: '/editor', element: <AdvancedDesignEditor /> },
-  { path: '/design', element: <AdvancedDesignEditor /> },
+  { path: '/', element: <Home /> },
+  { path: '/editor', element: <Editor /> },
+  { path: '/health', element: <Health /> },
+  { path: '/design', element: <Editor /> },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -37,27 +37,31 @@ import GoogleFontsPanel from './GoogleFontsPanel';
 import IntelligentLayoutSuggestions from './IntelligentLayoutSuggestions';
 import ExportPanel from '../ExportPanel';
 import ColorPalettePanel from '../ColorPalettePanel';
+import { api } from '../../api/apiClient';
 
-// API integration for Phase 1 intelligence
+// Lazy fabric loader to avoid bundle/import issues
+let fabricRef = null;
+const getFabric = async () => {
+  if (fabricRef) return fabricRef;
+  try {
+    const mod = await import('fabric');
+    fabricRef = mod.fabric || mod.default?.fabric || mod;
+    return fabricRef;
+  } catch (e) {
+    if (typeof window !== 'undefined' && window.fabric) return window.fabric;
+    throw e;
+  }
+};
+
+// API integration for Phase 1 intelligence (centralized via apiClient)
 const fetchIntelligenceAnalysis = async (query, context = 'design', language = 'mixed') => {
   try {
-    const response = await fetch('http://localhost:8000/api/intelligence/analyze', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: query,
-        context: context,
-        language: language
-      })
+    const { data } = await api.post('/api/intelligence/analyze', {
+      query,
+      context,
+      language
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
+    return data;
   } catch (error) {
     console.error('Failed to fetch intelligence analysis:', error);
     return null;
@@ -134,7 +138,7 @@ const AdvancedDesignEditor = () => {
   };
 
   // Handle layout selection
-  const handleLayoutSelect = (layoutData) => {
+  const handleLayoutSelect = async (layoutData) => {
     if (!canvas) return;
 
     // Clear canvas
@@ -142,20 +146,20 @@ const AdvancedDesignEditor = () => {
     canvas.backgroundColor = 'white';
 
     // Apply layout template
-    applyLayoutTemplate(layoutData);
+    await applyLayoutTemplate(layoutData);
     
     showNotification(`Applied ${layoutData.name} layout`, 'success');
   };
 
   // Apply intelligent layout recommendation
-  const handleApplyRecommendation = (recommendation) => {
+  const handleApplyRecommendation = async (recommendation) => {
     if (!canvas || !recommendation.layout) return;
 
     // Clear canvas
     canvas.clear();
     
     // Apply recommended layout with intelligence data
-    applyIntelligentLayout(recommendation.layout, recommendation.intelligenceData);
+    await applyIntelligentLayout(recommendation.layout, recommendation.intelligenceData);
     
     showNotification(
       `Applied AI recommendation: ${recommendation.layout.name} (${Math.round(recommendation.confidence * 100)}% match)`,
@@ -164,11 +168,12 @@ const AdvancedDesignEditor = () => {
   };
 
   // Apply layout template to canvas
-  const applyLayoutTemplate = (layout) => {
+  const applyLayoutTemplate = async (layout) => {
     if (!canvas || !layout.elements) return;
 
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
+    const fabric = await getFabric();
 
     // Apply background color
     if (layout.colors && layout.colors.length > 0) {
@@ -184,7 +189,7 @@ const AdvancedDesignEditor = () => {
 
       if (elementType.includes('text') || elementType.includes('title') || elementType.includes('subtitle')) {
         // Add text elements
-        const text = new fabric.Text(`${elementType.replace('_', ' ').toUpperCase()}`, {
+        const text = new fabric.Text(`${elementType.replace('_', ' ').toUpperCase()}` , {
           left: left,
           top: top,
           width: width,
@@ -226,8 +231,9 @@ const AdvancedDesignEditor = () => {
   };
 
   // Apply intelligent layout with cultural context
-  const applyIntelligentLayout = (layout, intelligence) => {
-    applyLayoutTemplate(layout);
+  const applyIntelligentLayout = async (layout, intelligence) => {
+    const fabric = await getFabric();
+    await applyLayoutTemplate(layout);
 
     // Add cultural content if available
     if (intelligence?.original_query && canvas) {
