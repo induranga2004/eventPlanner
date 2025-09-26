@@ -1,6 +1,6 @@
-# backend-py/src/planner/service.py
+# backend-py/planner/service.py
 from typing import List, Tuple
-from datetime import date
+from datetime import date as _date
 from uuid import uuid4
 
 CONCEPT_A_SPLIT = [
@@ -49,8 +49,7 @@ def _round_and_fix(total: int, parts: List[Tuple[str, float]]):
 def generate_costs(total_budget_lkr: int):
     return _round_and_fix(total_budget_lkr, CONCEPT_A_SPLIT)
 
-def compress_milestones(event_date: date):
-    from datetime import date as _date
+def compress_milestones(event_date: _date):
     days_to_event = (event_date - _date.today()).days
     ms = list(MILESTONES)
 
@@ -64,6 +63,35 @@ def compress_milestones(event_date: date):
         ms[3] = (-2, ms[3][1])   # was -7
 
     return [(off if off <= 0 else 0, label) for off, label in ms]
+
+def apply_venue_lead_time(event_date: _date, milestones, lead_days: int):
+    """
+    Ensure a 'Book venue' milestone at -lead_days (or as early as possible if event is sooner).
+    Deduplicate labels and return sorted by offset asc.
+    """
+    if lead_days <= 0:
+        return milestones
+
+    days_to_event = (event_date - _date.today()).days
+    desired = -int(lead_days)
+    if days_to_event < lead_days:
+        desired = -max(days_to_event - 1, 0)
+
+    labeled = [m for m in milestones]
+    labels = [lbl for _, lbl in labeled]
+    if "Book venue" not in labels:
+        labeled.insert(0, (desired, "Book venue"))
+    else:
+        labeled = [(desired if lbl == "Book venue" else off, lbl) for off, lbl in labeled]
+
+    labeled = [(off if off <= 0 else 0, lbl) for off, lbl in labeled]
+
+    dedup = {}
+    for off, lbl in labeled:
+        if lbl not in dedup or off < dedup[lbl]:
+            dedup[lbl] = off
+    out = sorted([(off, lbl) for lbl, off in dedup.items()], key=lambda x: x[0])
+    return out
 
 def concept_ids(n: int) -> List[str]:
     return [f"A{i}" for i in range(1, n + 1)]

@@ -1,22 +1,23 @@
-# backend-py/src/routes/planner.py
+# backend-py/routers/planner.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
 from datetime import date
 
-from src.config.database import get_db
-from src.models.event_planner import EventPlan, PlanCost, PlanTimeline, SelectedPlan
-from src.models.campaign import Campaign  # adjust if your Campaign model file name differs
+from config.database import get_db
+from models.event_planner import EventPlan, PlanCost, PlanTimeline, SelectedPlan
+from models.campaign import Campaign
 
-from src.planner.service import (
+from planner.service import (
     generate_costs, compress_milestones, concept_ids,
-    pick_title, pick_assumptions, feasibility_notes, uuid
+    pick_title, pick_assumptions, feasibility_notes, uuid,
+    apply_venue_lead_time
 )
+from agents.venue_finder import find_venues
 
 router = APIRouter(prefix="/campaigns", tags=["planner"])
 
-# ---------- Schemas (kept local to the router for brevity) ----------
 EventType = Literal["wedding", "concert", "corporate", "workshop", "birthday"]
 
 class WizardInput(BaseModel):
@@ -63,11 +64,8 @@ class EventPlanOut(BaseModel):
     event: EventInfo
     concepts: List[Concept]
     timeline: List[TimelineItem]
-    derived: dict
+    derived: dict  # contains feasibility_notes, suggested_venues, recommended_lead_days, venue_booking_risk, venue_booking_note
 
-class SelectBody(BaseModel):
-    concept_id: str
-# -------------------------------------------------------------------
 
 @router.post("/{campaign_id}/planner/generate", response_model=EventPlanOut)
 def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(get_db)):
@@ -86,17 +84,16 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
         notes=body.special_instructions or ""
     )
 
+    # Generate concepts and persist
     concept_list: List[Concept] = []
     ids = concept_ids(body.number_of_concepts)
     for idx, cid in enumerate(ids):
         title = pick_title(idx)
         assumptions = pick_assumptions(idx)
-        # allocate costs
         cost_pairs = generate_costs(body.total_budget_lkr)
         costs = [CostItem(category=c, amount_lkr=v) for c, v in cost_pairs]
         total = sum(c.amount_lkr for c in costs)
 
-        # persist
         plan_id = uuid()
         plan = EventPlan(
             id=plan_id,
@@ -110,6 +107,7 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
         db.add(plan)
         for c in costs:
             db.add(PlanCost(id=uuid(), event_plan_id=plan_id, category=c.category, amount_lkr=c.amount_lkr))
+        # timeline base (same per concept)
         for off, label in compress_milestones(event_info.date):
             db.add(PlanTimeline(id=uuid(), event_plan_id=plan_id, offset_days=off, milestone=label))
         db.commit()
@@ -125,72 +123,36 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             )
         )
 
+    # Venue suggestions (hybrid: SerpAPI or CSV fallback)
+    suggested = find_venues(body.city, body.event_type, top_k=5)
+    known_leads = [
+        v.get("min_lead_days") for v in suggested
+        if isinstance(v.get("min_lead_days"), int) and v.get("min_lead_days") > 0
+    ]
+    recommended_lead_days = max(known_leads) if known_leads else 30
+
+    # Build timeline with lead-time consideration
+    base_tl = [(o, m) for o, m in compress_milestones(event_info.date)]
+    tl_with_lead = apply_venue_lead_time(event_info.date, base_tl, recommended_lead_days)
+
+    days_to_event = (event_info.date - date.today()).days
+    risk = days_to_event < recommended_lead_days
+    risk_note = None
+    if risk:
+        rld = recommended_lead_days
+        risk_note = f"Event in {days_to_event} days; popular venues often require ~{rld} days lead time."
+
     out = EventPlanOut(
         campaign_id=campaign_id,
         event=event_info,
         concepts=concept_list,
-        timeline=[TimelineItem(offset_days=o, milestone=m) for o, m in compress_milestones(event_info.date)],
-        derived={"feasibility_notes": feasibility_notes(body.total_budget_lkr, body.attendees_estimate)}
+        timeline=[TimelineItem(offset_days=o, milestone=m) for o, m in tl_with_lead],
+        derived={
+            "feasibility_notes": feasibility_notes(body.total_budget_lkr, body.attendees_estimate),
+            "suggested_venues": suggested,
+            "recommended_lead_days": recommended_lead_days,
+            "venue_booking_risk": risk,
+            "venue_booking_note": risk_note
+        }
     )
     return out
-
-@router.get("/{campaign_id}/planner/results", response_model=EventPlanOut)
-def get_results(campaign_id: str, db: Session = Depends(get_db)):
-    plans = db.query(EventPlan).filter(EventPlan.campaign_id == campaign_id).order_by(EventPlan.created_at.desc()).all()
-    if not plans:
-        raise HTTPException(status_code=404, detail="No plans generated yet")
-
-    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-
-    # NOTE: If you persist full event meta separately, reconstruct it here
-    event_info = EventInfo(
-        name=campaign.title,
-        type="wedding",  # fallback if not stored; adjust to your schema
-        city=campaign.city,
-        venue="",
-        date=campaign.date,
-        attendees=0,
-        audience_profile="",
-        notes=""
-    )
-
-    concepts: List[Concept] = []
-    for p in plans:
-        costs = [CostItem(category=c.category, amount_lkr=c.amount_lkr) for c in p.costs]
-        concepts.append(
-            Concept(
-                id=p.concept_key,
-                title=p.concept_title,
-                assumptions=(p.assumptions.split("|") if p.assumptions else []),
-                costs=costs,
-                total_lkr=p.total_lkr,
-                budget_profile=p.budget_profile
-            )
-        )
-
-    # take timeline from the latest plan
-    timeline = [TimelineItem(offset_days=t.offset_days, milestone=t.milestone) for t in plans[0].timeline]
-
-    return EventPlanOut(
-        campaign_id=campaign_id,
-        event=event_info,
-        concepts=concepts,
-        timeline=timeline,
-        derived={"feasibility_notes": []}
-    )
-
-@router.post("/{campaign_id}/planner/select")
-def select_concept(campaign_id: str, body: SelectBody, db: Session = Depends(get_db)):
-    plan = db.query(EventPlan).filter(
-        EventPlan.campaign_id == campaign_id,
-        EventPlan.concept_key == body.concept_id
-    ).first()
-    if not plan:
-        raise HTTPException(status_code=404, detail="Concept not found")
-
-    sel = SelectedPlan(id=uuid(), campaign_id=campaign_id, event_plan_id=plan.id)
-    db.add(sel)
-    db.commit()
-    return {"message": "Selected", "campaign_id": campaign_id, "concept_id": body.concept_id, "event_plan_id": plan.id}

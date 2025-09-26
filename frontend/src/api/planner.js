@@ -1,8 +1,38 @@
 // frontend/src/api/planner.js
 const BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
+export async function createCampaign(name) {
+  const res = await fetch(`${BASE}/campaigns`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function generatePlans(payload) {
-  const url = `${BASE}/campaigns/${payload.campaign_id}/planner/generate`;
+  // First, create a campaign if it doesn't exist
+  let campaignId = payload.campaign_id;
+  
+  try {
+    // Try to get the campaign first
+    const campaignRes = await fetch(`${BASE}/campaigns/${campaignId}`);
+    if (!campaignRes.ok) {
+      // Campaign doesn't exist, create it
+      console.log("Creating new campaign...");
+      const campaign = await createCampaign(payload.event_name || "New Event");
+      campaignId = campaign.id;
+      payload.campaign_id = campaignId;
+    }
+  } catch (error) {
+    console.log("Creating campaign due to error:", error.message);
+    const campaign = await createCampaign(payload.event_name || "New Event");
+    campaignId = campaign.id;
+    payload.campaign_id = campaignId;
+  }
+  
+  const url = `${BASE}/campaigns/${campaignId}/planner/generate`;
   console.log("Calling API:", url);
   console.log("Payload:", payload);
   

@@ -1,8 +1,8 @@
-# backend-py/src/models/event_planner.py
+# backend-py/models/event_planner.py
 from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from src.config.database import Base
+from config.database import Base
 
 class EventPlan(Base):
     __tablename__ = "event_plans"

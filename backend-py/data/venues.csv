@@ -1,0 +1,8 @@
+city,name,type,address,capacity,avg_cost_lkr,rating,website,min_lead_days
+Colombo,Shangri-La Ballroom,wedding|corporate,1 Galle Face,500,4000000,4.7,https://www.shangri-la.com/,90
+Colombo,Kingsbury Banquet,wedding|corporate,Janadhipathi Mawatha,450,3000000,4.6,https://www.thekingsburyhotel.com/,60
+Colombo,Arcade Independence Square Garden,concert|outdoor,Independence Ave,800,1500000,4.5,https://www.srilanka.travel/,45
+Galle,Fort Ramparts Grounds,concert|outdoor,Galle Fort,1200,1200000,4.4,https://www.srilanka.travel/,60
+Galle,Jetwing Lighthouse Hall,wedding|corporate,Galle,300,2200000,4.5,https://www.jetwinghotels.com/,45
+Kandy,Earl's Regency Banquet,wedding|corporate,Tennekumbura,400,2400000,4.4,https://www.aitkenspencehotels.com/,45
+Kandy,Peradeniya Botanical Lawn,concert|outdoor,Peradeniya,1000,900000,4.6,https://www.botanicgardens.gov.lk/,30
