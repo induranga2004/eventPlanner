@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
 import re
 from uuid import uuid4
 import requests
+from urllib.parse import urlparse
 
 from models.design import (
     StartDesignRequest, StartDesignResponse, Variant, TextOverlay, TextItem, Bounds, CutoutAsset,
@@ -96,6 +98,125 @@ def start_design(payload: StartDesignRequest):
 
     return StartDesignResponse(render_id=render_id, campaign_id=campaign_id, variants=variants)
 
+@router.get("/artists")
+def list_artists(link: str = Query(..., description="Public Google Drive folder link or folder ID")):
+    """List image-like files from a public Google Drive folder.
+    Accepts either a full shared folder link or the folder ID. Returns a list of items with id and view url.
+    Note: This uses best-effort HTML parsing; for production use the Drive API with an API key and CORS.
+    """
+    # Extract folder ID
+    folder_id = None
+    if re.match(r"^[a-zA-Z0-9_-]+$", link):
+        folder_id = link
+    else:
+        try:
+            parsed = urlparse(link)
+            m = re.search(r"/folders/([a-zA-Z0-9_-]+)", parsed.path)
+            if m:
+                folder_id = m.group(1)
+        except Exception:
+            pass
+    if not folder_id:
+        raise HTTPException(422, "Invalid Google Drive folder link or id")
+
+    # Try multiple folder render endpoints to maximize extraction success
+    candidates = [
+        f"https://drive.google.com/embeddedfolderview?id={folder_id}#grid",
+        f"https://drive.google.com/folderview?id={folder_id}#grid",
+        f"https://drive.google.com/drive/folders/{folder_id}",
+    ]
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    ids: set[str] = set()
+    last_status = None
+    for url in candidates:
+        try:
+            res = requests.get(url, timeout=60, headers=headers)
+            last_status = res.status_code
+            if res.status_code != 200:
+                continue
+            html = res.text
+            # Extract IDs referenced in file links
+            ids.update(re.findall(r"/file/d/([a-zA-Z0-9_-]+)", html))
+            # Extract data-id occurrences (often used in embedded view)
+            ids.update(re.findall(r"data-id=\"([a-zA-Z0-9_-]{10,})\"", html))
+            # Some pages embed JSON with "id":"..."
+            ids.update(re.findall(r'"id":"([a-zA-Z0-9_-]{10,})"', html))
+            # If we found any, we can stop early
+            if ids:
+                break
+        except requests.exceptions.RequestException:
+            continue
+
+    # Clean up any false positives (e.g., folder id itself)
+    ids.discard(folder_id)
+
+    items = []
+    for i, fid in enumerate(sorted(ids)):
+        view_url = f"https://drive.google.com/uc?export=view&id={fid}"
+        thumb_url = f"https://drive.google.com/thumbnail?id={fid}"
+        # Direct image bytes (good for display/download); add a size hint to improve quality
+        raw_url = f"https://lh3.googleusercontent.com/d/{fid}=w2000"
+        # Alternate direct download links
+        dl_url = f"https://drive.google.com/uc?id={fid}&export=download"
+        dl_url2 = f"https://drive.usercontent.google.com/download?id={fid}&export=view"
+        items.append({
+            "id": fid,
+            "label": f"Asset {i+1}",
+            "url": view_url,        # backward-compatible
+            "view": view_url,
+            "thumb": thumb_url,
+            "raw": raw_url,
+            "dl": dl_url,
+            "dl2": dl_url2,
+        })
+        if len(items) >= 200:
+            break
+
+    return {
+        "folder_id": folder_id,
+        "count": len(items),
+        "items": items,
+        "source": "embeddedfolderview" if items else ("status:" + str(last_status))
+    }
+
+@router.get("/drive-image")
+def drive_image(id: str, size: int = Query(800, ge=64, le=4000)):
+    """Proxy a Google Drive image by ID to avoid browser CORS/referrer issues.
+    Tries multiple direct endpoints and returns the first image content found.
+    """
+    candidates = [
+        f"https://lh3.googleusercontent.com/d/{id}=w{size}",
+        f"https://drive.google.com/uc?id={id}&export=download",
+        f"https://drive.usercontent.google.com/download?id={id}&export=view",
+        f"https://drive.google.com/uc?export=view&id={id}",
+    ]
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://drive.google.com/",
+    }
+    for url in candidates:
+        try:
+            r = requests.get(url, timeout=30, headers=headers)
+            if r.status_code != 200:
+                continue
+            ct = r.headers.get("Content-Type", "")
+            if not ct.startswith("image/"):
+                continue
+            # Optionally enforce a max size to prevent huge responses
+            if len(r.content) > 15 * 1024 * 1024:  # 15MB limit
+                continue
+            return Response(content=r.content, media_type=ct, headers={
+                "Cache-Control": "public, max-age=3600",
+            })
+        except requests.exceptions.RequestException:
+            continue
+    raise HTTPException(404, "Image not found or not publicly accessible")
+
 @router.post("/harmonize", response_model=HarmonizeResponse)
 def harmonize(payload: HarmonizeRequest):
     # Basic validation for bg_url to catch placeholders or missing chaining
@@ -108,11 +229,15 @@ def harmonize(payload: HarmonizeRequest):
         )
     # Fetch background
     try:
-        bg_resp = requests.get(payload.bg_url, timeout=60)
+        bg_resp = requests.get(
+            payload.bg_url,
+            timeout=60,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; EventPlannerAI/1.0)"}
+        )
     except requests.exceptions.RequestException as e:
         raise HTTPException(422, f"Failed to fetch background image: {e}")
     if bg_resp.status_code != 200:
-        raise HTTPException(400, "Failed to fetch background image")
+        raise HTTPException(422, f"Failed to fetch background image (status {bg_resp.status_code})")
     bg_bytes = bg_resp.content
 
     # Collect visible cutouts as bytes
@@ -121,10 +246,15 @@ def harmonize(payload: HarmonizeRequest):
     for sc in sorted(payload.selected_cutouts, key=lambda c: c.z):
         if not sc.visible:
             continue
-        r = requests.get(sc.url, timeout=60)
-        if r.status_code != 200:
-            raise HTTPException(400, f"Failed to fetch cutout {sc.artist_id}")
-        cutouts_data.append((r.content, sc.bbox))
+        try:
+            r = requests.get(sc.url, timeout=60, headers={"User-Agent": "Mozilla/5.0 (compatible; EventPlannerAI/1.0)"})
+            if r.status_code != 200:
+                print(f"Warn: cutout fetch status {r.status_code} for {sc.artist_id}")
+                continue
+            cutouts_data.append((r.content, sc.bbox))
+        except requests.exceptions.RequestException as e:
+            print(f"Warn: cutout fetch failed for {sc.artist_id}: {e}")
+            continue
 
     # Build harmonize prompt with saved event context for better accuracy
     # Default context in case extraction fails for any reason
