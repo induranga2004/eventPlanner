@@ -41,12 +41,33 @@ try:
 except Exception as e:
     logger.warning(f"/api/design router not mounted: {e}")
 
+# Mount intelligence router
+try:
+    from routers.intelligence import router as intelligence_router
+    app.include_router(intelligence_router, prefix="/api/intelligence", tags=["intelligence"])
+    logger.info("Mounted /api/intelligence router.")
+except Exception as e:
+    logger.warning(f"/api/intelligence router not mounted: {e}")
+
 @app.get("/", summary="Health Check")
 def health_check():
     return {
         "status": "Event Planner AI Backend is running",
-        "version": "1.0.0",
-        "services": ["visual-composer"],
-        "ai_enable_flux": AI_ENABLE_FLUX,
-        "cloudinary_configured": CLOUDINARY_READY
+        "version": "2.0.0",
+        "services": ["visual-composer", "intelligent-analysis"],
+        "features": {
+            "ai_enable_flux": AI_ENABLE_FLUX,
+            "cloudinary_configured": CLOUDINARY_READY,
+            "crewai_intelligence": True,
+            "cultural_database": "Sri Lankan context",
+            "supported_languages": ["English", "Sinhala", "Mixed"]
+        },
+        "endpoints": {
+            "design": "/api/design/*",
+            "intelligence": "/api/intelligence/*"
+        }
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
