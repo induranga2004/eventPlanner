@@ -1,0 +1,52 @@
+city,name,type,address,capacity_range,pp_min_lkr,pp_max_lkr,contact,website,stall_ok,rating
+Colombo,ABC Caterers,full-service,Colombo,100-1000,1800,3500,+94 11 123 4567,https://abccaterers.lk,false,4.5
+Colombo,Street Bites,stall,Colombo,50-1000,600,1200,+94 11 555 4321,https://streetbites.lk,true,4.3
+Colombo,SeaSide Grill,stall,Marine Dr,100-800,700,1400,+94 77 222 7788,https://seasidegrill.lk,true,4.2
+Colombo,Lotus Caterers,full-service,Narahenpita,150-1500,2000,4200,+94 11 400 1111,https://lotuscaterers.lk,false,4.4
+Colombo,Saffron Table,buffet-specialist,Baseline Rd,100-900,1500,2800,+94 71 900 1112,https://saffrontable.lk,false,4.1
+Colombo,Tea & Tiffin,stall|beverage,Independence Ave,50-600,400,900,+94 76 123 0099,https://teaandtiffin.lk,true,4.0
+Colombo,Biryani Bros,live-stations,Col 10,120-900,1200,2400,+94 77 666 1234,https://biryanibros.lk,false,4.2
+Colombo,Chill Juice Bar,beverage carts,Park St,50-1000,300,700,+94 76 111 5555,https://chilljuice.lk,true,4.0
+Colombo,Dessert Dots,dessert carts,Havelock Rd,50-800,450,1000,+94 77 200 3333,https://dessertdots.lk,true,4.1
+Colombo,Green Leaf Vegan,full-service vegan,Nugegoda,80-600,1600,2800,+94 71 888 5544,https://greenleafvegan.lk,false,4.2
+Galle,Fort Feast,full-service,Galle Fort,80-600,2000,3800,+94 91 333 0000,https://fortfeast.lk,false,4.4
+Galle,Beach Buns,stall,Beach Rd,80-800,500,1000,+94 71 999 1122,https://beachbuns.lk,true,4.1
+Galle,Spice Coast Kitchens,full-service,Matara Rd,120-900,1700,3200,+94 77 555 1000,https://spicecoast.lk,false,4.2
+Galle,Tropical Sips,beverage carts,Galle City,60-900,350,800,+94 71 111 8899,,true,4.0
+Galle,Crepe Cart Co,dessert carts,Fort Bazaar,40-600,500,1100,+94 77 444 2211,,true,4.0
+Kandy,Hill Country Caterers,full-service,Kandy City,100-700,1700,3200,+94 81 222 3344,https://hillcaterers.lk,false,4.3
+Kandy,Tea Cart Co,stall|beverage,Peradeniya,50-500,400,900,+94 76 888 6677,https://teacart.lk,true,4.0
+Kandy,Central Spreads,buffet-specialist,Katugastota,120-900,1500,2700,+94 77 333 2200,,false,4.1
+Kandy,Grill on Wheels,stall|grill,Kandy Lake,80-700,650,1300,+94 77 901 2222,,true,4.1
+Kandy,Sweet Peaks,dessert carts,Anagarika Dharmapala Mawatha,40-500,450,900,+94 70 555 2020,,true,4.0
+Negombo,Negombo Party Foods,full-service,Lewis Pl,120-900,1600,3000,+94 31 222 1111,,false,4.2
+Negombo,Porutota Grills,stall|grill,Porutota Rd,80-800,600,1200,+94 71 202 9090,,true,4.0
+Negombo,Fisherman’s Fry,seafood live,Beach Rd,100-700,1800,3400,+94 77 222 3344,,false,4.2
+Negombo,Coco Coolers,beverage carts,Negombo City,60-900,300,700,+94 71 300 8080,,true,3.9
+Nuwara Eliya,Highland Feast,full-service,Grand Hotel Rd,80-500,1900,3300,+94 52 222 7788,,false,4.3
+Nuwara Eliya,Tea Estate Bites,stall|snack,Kandapola,50-600,500,1000,+94 77 119 1199,,true,4.0
+Nuwara Eliya,Lakefront Griddle,stall|grill,Gregory Lake,80-800,700,1400,+94 71 909 9090,,true,4.1
+Nuwara Eliya,Strudel & Co,dessert carts,Queen Elizabeth Dr,40-400,550,1100,+94 77 555 7788,,true,4.0
+Jaffna,Northern Flavours,full-service,Stanley Rd,100-700,1600,3000,+94 21 222 3344,,false,4.2
+Jaffna,Palmyrah Plates,traditional,Hospital Rd,100-600,1400,2600,+94 77 800 5511,,false,4.1
+Jaffna,Ice Kottu Cart,stall|dessert,Old Park Rd,50-700,400,900,+94 71 111 2332,,true,3.9
+Jaffna,Spicy Tawa,live-stations,Clock Tower,80-600,900,1600,+94 77 222 8999,,false,4.0
+Matara,Southern Bites,full-service,Beach Rd,120-800,1500,2900,+94 41 222 1000,,false,4.2
+Matara,Surf & Snack,stall|snack,Polhena,80-800,450,900,+94 71 777 0909,,true,3.9
+Matara,Lime & Chill,beverage carts,Matara City,60-900,300,650,+94 76 333 2200,,true,3.9
+Matara,Coconut Grill,stall|grill,Devinuwara,80-700,650,1300,+94 71 456 4567,,true,4.0
+Anuradhapura,Rajadhani Caterers,full-service,Wijaya Mawatha,150-1000,1600,3100,+94 25 223 3344,,false,4.1
+Anuradhapura,Tank View Stalls,stall|mix,New Town,80-1200,500,1100,+94 76 882 7722,,true,3.9
+Anuradhapura,Heritage Sweet Cart,dessert carts,Old Town,40-500,450,900,+94 77 321 2211,,true,3.9
+Trincomalee,Marine Bay Caterers,full-service,Uppuveli,120-900,1700,3200,+94 26 222 8899,,false,4.2
+Trincomalee,Harbour Grills,stall|grill,Fort Frederick,100-1000,700,1400,+94 71 902 3344,,true,4.0
+Trincomalee,Blue Wave Juice,beverage carts,Nilaveli,60-900,300,650,+94 76 443 3344,,true,3.9
+Batticaloa,Passikudah Platters,full-service,Pasikuda,100-700,1700,3200,+94 65 222 7788,,false,4.2
+Batticaloa,Lagoon Bites,stall|seafood,Navalady,80-800,800,1600,+94 77 311 8899,,true,4.0
+Batticaloa,Tropical Scoops,dessert carts,Batticaloa Town,40-600,450,950,+94 76 888 0001,,true,3.9
+Hambantota,Deep South Caterers,full-service,Tangalle Rd,150-1200,1800,3400,+94 47 222 1100,,false,4.2
+Hambantota,Mattala Grill Pods,stall|grill,Mattala,100-1500,650,1300,+94 71 550 5505,,true,4.0
+Hambantota,Oasis Juice Bar,beverage carts,Hambantota,60-1000,300,650,+94 76 121 2121,,true,3.9
+Kurunegala,Wayamba Caterers,full-service,Dambulla Rd,120-1000,1500,2900,+94 37 222 3344,,false,4.1
+Kurunegala,Clock Tower Stalls,stall|mix,Kurunegala Town,80-1500,500,1100,+94 71 707 7070,,true,3.9
+Kurunegala,Sweet Kiri Cart,dessert carts,Clock Tower Rd,40-600,400,900,+94 76 333 4444,,true,3.9

@@ -11,10 +11,11 @@ from models.campaign import Campaign
 
 from planner.service import (
     generate_costs, compress_milestones, concept_ids,
-    pick_title, pick_assumptions, feasibility_notes, uuid,
-    apply_venue_lead_time
+    pick_title, pick_assumptions, pick_concept_details, feasibility_notes, uuid,
+    apply_venue_lead_time, generate_dynamic_costs
 )
 from agents.venue_finder import find_venues
+from agents.catering_openai import suggest_catering_with_openai  # <-- NEW
 
 router = APIRouter(prefix="/campaigns", tags=["planner"])
 
@@ -64,7 +65,8 @@ class EventPlanOut(BaseModel):
     event: EventInfo
     concepts: List[Concept]
     timeline: List[TimelineItem]
-    derived: dict  # contains feasibility_notes, suggested_venues, recommended_lead_days, venue_booking_risk, venue_booking_note
+    # contains: feasibility_notes, suggested_venues, recommended_lead_days, venue_booking_risk, venue_booking_note, catering_suggestions
+    derived: dict
 
 
 @router.post("/{campaign_id}/planner/generate", response_model=EventPlanOut)
@@ -87,10 +89,17 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     # Generate concepts and persist
     concept_list: List[Concept] = []
     ids = concept_ids(body.number_of_concepts)
+    
+    # Get venue suggestions for dynamic pricing
+    suggested_venues = find_venues(body.city, body.event_type, top_k=10)
+    
     for idx, cid in enumerate(ids):
-        title = pick_title(idx)
-        assumptions = pick_assumptions(idx)
-        cost_pairs = generate_costs(body.total_budget_lkr)
+        title = pick_title(cid)
+        assumptions = pick_assumptions(cid)
+        concept_details = pick_concept_details(cid)
+        
+        # Generate initial costs based on concept theme
+        cost_pairs = generate_costs(body.total_budget_lkr, cid)
         costs = [CostItem(category=c, amount_lkr=v) for c, v in cost_pairs]
         total = sum(c.amount_lkr for c in costs)
 
@@ -102,7 +111,7 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             concept_title=title,
             assumptions="|".join(assumptions),
             total_lkr=total,
-            budget_profile="ConceptA_PremiumVenue"
+            budget_profile=concept_details["title"]
         )
         db.add(plan)
         for c in costs:
@@ -119,12 +128,12 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
                 assumptions=assumptions,
                 costs=costs,
                 total_lkr=total,
-                budget_profile="ConceptA_PremiumVenue"
+                budget_profile=concept_details["title"]
             )
         )
 
-    # Venue suggestions (hybrid: SerpAPI or CSV fallback)
-    suggested = find_venues(body.city, body.event_type, top_k=5)
+    # Use previously fetched venue suggestions
+    suggested = suggested_venues[:5]
     known_leads = [
         v.get("min_lead_days") for v in suggested
         if isinstance(v.get("min_lead_days"), int) and v.get("min_lead_days") > 0
@@ -135,12 +144,22 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     base_tl = [(o, m) for o, m in compress_milestones(event_info.date)]
     tl_with_lead = apply_venue_lead_time(event_info.date, base_tl, recommended_lead_days)
 
+    # Venue booking risk note
     days_to_event = (event_info.date - date.today()).days
     risk = days_to_event < recommended_lead_days
     risk_note = None
     if risk:
         rld = recommended_lead_days
         risk_note = f"Event in {days_to_event} days; popular venues often require ~{rld} days lead time."
+
+    # --- NEW: Catering suggestions (OpenAI over CSVs) ---
+    catering = suggest_catering_with_openai(
+        city=body.city,
+        event_type=body.event_type,
+        venue=body.venue or None,
+        attendees=body.attendees_estimate,
+        total_budget_lkr=body.total_budget_lkr
+    )
 
     out = EventPlanOut(
         campaign_id=campaign_id,
@@ -152,7 +171,94 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             "suggested_venues": suggested,
             "recommended_lead_days": recommended_lead_days,
             "venue_booking_risk": risk,
-            "venue_booking_note": risk_note
+            "venue_booking_note": risk_note,
+            "catering_suggestions": catering  # <-- NEW
         }
     )
     return out
+
+
+# --- NEW: Dynamic Pricing Endpoints ---
+
+class VenueSelection(BaseModel):
+    venue_name: str
+    venue_data: dict  # Full venue object from suggestions
+
+class CateringSelection(BaseModel):
+    caterer_name: str
+    catering_data: dict  # Full catering object from suggestions
+
+class UpdateCostsRequest(BaseModel):
+    concept_id: str
+    venue_selection: Optional[VenueSelection] = None
+    catering_selection: Optional[CateringSelection] = None
+    attendees: int
+    total_budget_lkr: int
+
+class UpdatedCostsResponse(BaseModel):
+    concept_id: str
+    updated_costs: List[CostItem]
+    total_lkr: int
+    cost_breakdown_notes: List[str]
+    venue_cost: int
+    catering_cost: int
+    savings_or_overage: int
+
+@router.post("/{campaign_id}/planner/update-costs", response_model=UpdatedCostsResponse)
+def update_concept_costs(
+    campaign_id: str, 
+    body: UpdateCostsRequest, 
+    db: Session = Depends(get_db)
+):
+    """Update concept costs based on specific venue and catering selections"""
+    
+    # Verify campaign exists
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    venue_data = body.venue_selection.venue_data if body.venue_selection else None
+    catering_data = body.catering_selection.catering_data if body.catering_selection else None
+    
+    # Generate dynamic costs
+    cost_pairs = generate_dynamic_costs(
+        total_budget_lkr=body.total_budget_lkr,
+        concept_id=body.concept_id,
+        venue_data=venue_data,
+        catering_data=catering_data,
+        attendees=body.attendees
+    )
+    
+    costs = [CostItem(category=c, amount_lkr=v) for c, v in cost_pairs]
+    total = sum(c.amount_lkr for c in costs)
+    
+    # Calculate individual costs for transparency
+    venue_cost = next((c.amount_lkr for c in costs if c.category == "venue"), 0)
+    catering_cost = next((c.amount_lkr for c in costs if c.category == "catering"), 0)
+    
+    # Calculate savings or overage
+    savings_or_overage = body.total_budget_lkr - total
+    
+    # Generate notes
+    notes = []
+    if venue_data:
+        notes.append(f"Venue: {venue_data.get('name', 'Selected venue')} - LKR {venue_cost:,}")
+    if catering_data:
+        notes.append(f"Catering: {catering_data.get('name', 'Selected caterer')} - LKR {catering_cost:,}")
+    
+    if savings_or_overage > 0:
+        notes.append(f"Under budget by LKR {savings_or_overage:,}")
+    elif savings_or_overage < 0:
+        notes.append(f"Over budget by LKR {abs(savings_or_overage):,}")
+    else:
+        notes.append("Exactly on budget")
+    
+    return UpdatedCostsResponse(
+        concept_id=body.concept_id,
+        updated_costs=costs,
+        total_lkr=total,
+        cost_breakdown_notes=notes,
+        venue_cost=venue_cost,
+        catering_cost=catering_cost,
+        savings_or_overage=savings_or_overage
+    )

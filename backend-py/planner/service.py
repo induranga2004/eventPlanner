@@ -22,20 +22,61 @@ MILESTONES = [
     (0,   "Event day"),
 ]
 
-CONCEPT_TITLE_BANK = [
-    "Elegant Hall Wedding",
-    "Garden Glam Reception",
-    "Classic Ballroom Affair",
-    "Seaside Chic Evening",
-    "Urban Loft Soirée",
-]
-
-CONCEPT_ASSUMPTIONS_BANK = [
-    ["Premium venue", "Plated dinner", "Live DJ + emcee", "Pastel florals"],
-    ["Premium venue", "Buffet dinner", "DJ + playlist", "Fairy lights canopy"],
-    ["Premium venue", "Family-style dinner", "Live acoustic duo", "Warm lighting"],
-    ["Premium venue", "Mixed buffet stations", "DJ + host", "Minimalist décor"],
-]
+# Different concept themes with unique characteristics
+CONCEPT_THEMES = {
+    "A1": {
+        "title": "Grand Luxury Experience",
+        "venue_preference": "luxury_hotel",
+        "catering_style": "premium_plated",
+        "decorations": "Premium florals & crystal chandeliers",
+        "entertainment": "Live band + professional MC",
+        "service_level": "White-glove concierge service",
+        "unique_features": ["Welcome cocktail hour", "Premium bar service", "Valet parking"],
+        "target_per_person": 8000,
+        "venue_weight": 0.45,
+        "catering_weight": 0.30,
+        "other_weights": {"decoration": 0.15, "entertainment": 0.07, "logistics": 0.03}
+    },
+    "A2": {
+        "title": "Garden Party Elegance",
+        "venue_preference": "garden_outdoor",
+        "catering_style": "gourmet_buffet",
+        "decorations": "Natural florals & fairy light canopies",
+        "entertainment": "Acoustic duo + DJ for dancing",
+        "service_level": "Personalized but relaxed service",
+        "unique_features": ["Outdoor ceremony space", "Sunset photo session", "Garden cocktails"],
+        "target_per_person": 5500,
+        "venue_weight": 0.35,
+        "catering_weight": 0.35,
+        "other_weights": {"decoration": 0.20, "entertainment": 0.07, "logistics": 0.03}
+    },
+    "A3": {
+        "title": "Modern Minimalist Chic",
+        "venue_preference": "modern_space",
+        "catering_style": "contemporary_stations",
+        "decorations": "Clean lines & dramatic lighting",
+        "entertainment": "Premium DJ + light show",
+        "service_level": "Efficient modern service",
+        "unique_features": ["Interactive food stations", "LED lighting design", "Photo booth"],
+        "target_per_person": 4200,
+        "venue_weight": 0.40,
+        "catering_weight": 0.25,
+        "other_weights": {"decoration": 0.12, "entertainment": 0.15, "logistics": 0.08}
+    },
+    "A4": {
+        "title": "Cultural Heritage Celebration",
+        "venue_preference": "cultural_historic",
+        "catering_style": "traditional_family",
+        "decorations": "Traditional motifs & cultural elements",
+        "entertainment": "Cultural performances + modern music",
+        "service_level": "Family-style hospitality",
+        "unique_features": ["Traditional ceremony elements", "Cultural food presentation", "Heritage decorations"],
+        "target_per_person": 3800,
+        "venue_weight": 0.30,
+        "catering_weight": 0.40,
+        "other_weights": {"decoration": 0.18, "entertainment": 0.09, "logistics": 0.03}
+    }
+}
 
 def _round_and_fix(total: int, parts: List[Tuple[str, float]]):
     raw = [(c, round(total * p)) for c, p in parts]
@@ -46,8 +87,21 @@ def _round_and_fix(total: int, parts: List[Tuple[str, float]]):
         raw[idx] = (c, v + diff)
     return raw
 
-def generate_costs(total_budget_lkr: int):
-    return _round_and_fix(total_budget_lkr, CONCEPT_A_SPLIT)
+def generate_costs(total_budget_lkr: int, concept_id: str = "A1"):
+    """Generate costs based on concept theme"""
+    theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+    
+    # Create budget split based on concept preferences
+    concept_split = [
+        ("venue", theme["venue_weight"]),
+        ("catering", theme["catering_weight"]),
+    ]
+    
+    # Add other categories
+    for category, weight in theme["other_weights"].items():
+        concept_split.append((category, weight))
+    
+    return _round_and_fix(total_budget_lkr, concept_split)
 
 def compress_milestones(event_date: _date):
     days_to_event = (event_date - _date.today()).days
@@ -96,11 +150,21 @@ def apply_venue_lead_time(event_date: _date, milestones, lead_days: int):
 def concept_ids(n: int) -> List[str]:
     return [f"A{i}" for i in range(1, n + 1)]
 
-def pick_title(i: int) -> str:
-    return CONCEPT_TITLE_BANK[i % len(CONCEPT_TITLE_BANK)]
+def pick_title(concept_id: str) -> str:
+    return CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])["title"]
 
-def pick_assumptions(i: int) -> List[str]:
-    return CONCEPT_ASSUMPTIONS_BANK[i % len(CONCEPT_ASSUMPTIONS_BANK)]
+def pick_concept_details(concept_id: str) -> dict:
+    return CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+
+def pick_assumptions(concept_id: str) -> List[str]:
+    theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+    return [
+        f"Venue: {theme['venue_preference'].replace('_', ' ').title()}",
+        f"Catering: {theme['catering_style'].replace('_', ' ').title()}",
+        f"Decorations: {theme['decorations']}",
+        f"Entertainment: {theme['entertainment']}",
+        f"Service: {theme['service_level']}"
+    ]
 
 def feasibility_notes(total: int, attendees: int):
     notes = []
@@ -111,6 +175,95 @@ def feasibility_notes(total: int, attendees: int):
     if attendees >= 200 and total / max(attendees, 1) < 1500:
         notes.append("Budget appears tight for this scale; consider sponsorships or scope adjustments")
     return notes
+
+def calculate_venue_cost(venue_data: dict, attendees: int, concept_id: str) -> int:
+    """Calculate venue cost based on selected venue and concept"""
+    if not venue_data:
+        theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+        # Fallback estimation based on concept target
+        return int(attendees * theme["target_per_person"] * theme["venue_weight"])
+    
+    # Use actual venue data if available
+    base_cost = venue_data.get("avg_cost_lkr", 0)
+    if base_cost == 0:
+        # Estimate based on capacity and type
+        capacity = venue_data.get("capacity", 100)
+        venue_type = venue_data.get("type", "").lower()
+        
+        if "luxury" in venue_type or "5-star" in venue_type:
+            base_cost = capacity * 3000
+        elif "hotel" in venue_type or "ballroom" in venue_type:
+            base_cost = capacity * 2000
+        elif "garden" in venue_type or "outdoor" in venue_type:
+            base_cost = capacity * 1500
+        else:
+            base_cost = capacity * 1200
+    
+    # Adjust for actual attendees vs capacity
+    if attendees > 0:
+        capacity_ratio = min(attendees / max(venue_data.get("capacity", attendees), 1), 1.0)
+        return int(base_cost * capacity_ratio)
+    
+    return base_cost
+
+def calculate_catering_cost(catering_data: dict, attendees: int, concept_id: str) -> int:
+    """Calculate catering cost based on selected catering and concept"""
+    if not catering_data:
+        theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+        # Fallback estimation based on concept target
+        return int(attendees * theme["target_per_person"] * theme["catering_weight"])
+    
+    # Use actual catering data
+    pp_min = catering_data.get("pp_min_lkr", 0)
+    pp_max = catering_data.get("pp_max_lkr", 0)
+    
+    if pp_min > 0 and pp_max > 0:
+        # Use concept preference to choose within range
+        theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+        if theme["catering_style"] in ["premium_plated", "gourmet_buffet"]:
+            per_person = int(pp_min + (pp_max - pp_min) * 0.8)  # Higher end
+        elif theme["catering_style"] == "contemporary_stations":
+            per_person = int(pp_min + (pp_max - pp_min) * 0.6)  # Mid-high
+        else:  # traditional_family
+            per_person = int(pp_min + (pp_max - pp_min) * 0.4)  # Mid-low
+            
+        return per_person * attendees
+    
+    # Fallback if no pricing data
+    theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+    return int(attendees * theme["target_per_person"] * theme["catering_weight"])
+
+def generate_dynamic_costs(total_budget_lkr: int, concept_id: str, venue_data: dict = None, catering_data: dict = None, attendees: int = 100):
+    """Generate costs with actual venue and catering selections"""
+    
+    # Calculate actual costs for venue and catering
+    venue_cost = calculate_venue_cost(venue_data, attendees, concept_id)
+    catering_cost = calculate_catering_cost(catering_data, attendees, concept_id)
+    
+    # Get theme for other categories
+    theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+    
+    # Calculate remaining budget for other categories
+    fixed_costs = venue_cost + catering_cost
+    remaining_budget = max(total_budget_lkr - fixed_costs, 0)
+    
+    # Calculate other category weights (normalize to sum to 1)
+    other_weights = theme["other_weights"]
+    total_other_weight = sum(other_weights.values())
+    
+    # Build final cost breakdown
+    cost_breakdown = [
+        ("venue", venue_cost),
+        ("catering", catering_cost)
+    ]
+    
+    # Distribute remaining budget across other categories
+    for category, weight in other_weights.items():
+        normalized_weight = weight / total_other_weight if total_other_weight > 0 else 0
+        category_cost = int(remaining_budget * normalized_weight)
+        cost_breakdown.append((category, category_cost))
+    
+    return cost_breakdown
 
 def uuid() -> str:
     return str(uuid4())
