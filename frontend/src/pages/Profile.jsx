@@ -15,10 +15,11 @@ export default function Profile() {
         setUser(data.user)
       } catch (e) {
         setError('Unauthorized, please sign in')
+        navigate('/login') // Redirect to login if unauthorized
       }
     }
     load()
-  }, [])
+  }, [navigate])
 
   const logout = () => {
     localStorage.removeItem('token')

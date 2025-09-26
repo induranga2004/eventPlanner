@@ -1,7 +1,11 @@
 import { api } from './apiClient'
 
-export async function register(email, password) {
-  const { data } = await api.post('/auth/register', { email, password })
+export async function register(formData) {
+  const { data } = await api.post('/auth/register', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
   return data
 }
 

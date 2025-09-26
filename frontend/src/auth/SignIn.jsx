@@ -19,6 +19,8 @@ export default function SignIn() {
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
 
+  console.log('SignIn component rendered'); // Debugging: Log when the component is rendered
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
@@ -28,8 +30,12 @@ export default function SignIn() {
     setError('')
     try {
       const res = await login(email, password)
-      if (res.token) localStorage.setItem('token', res.token)
-      navigate('/me')
+      if (res.token) {
+        localStorage.setItem('token', res.token)
+        localStorage.setItem('userRole', res.role) // Store the user role
+        console.log('User Role Stored:', res.role) // Debugging: Log the stored role
+        navigate(`/${res.role}-dashboard`); // Dynamically navigate to the relevant dashboard
+      }
     } catch (e) {
       setError(e?.response?.data?.error || 'Login failed')
     } finally {
