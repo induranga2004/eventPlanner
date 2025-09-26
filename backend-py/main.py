@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from models.caption_agent import generate_captions
 from models.post_agent import share_post
 from models.analytics_agent import fetch_post_metrics
@@ -72,35 +72,22 @@ def analytics_api(request: AnalyticsRequest):
 
 @app.post("/auto-share")
 def auto_share(event: EventInput):
-    # 1. Generate caption
-    event_dict = {
-        "name": event.name,
-        "date": event.date,
-        "venue": event.venue,
-        "price": event.price,
-        "audience": event.audience
-    }
-    try:
-        captions = generate_captions(event_dict)
-        caption = captions.get("instagram") or next(iter(captions.values()))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Caption generation failed: {e}")
+    # Prepare event dict for caption generation
+    event_dict = event.dict()
+    captions = generate_captions(event_dict)
+    caption = captions.get("instagram", "No caption generated.")
 
-    # 2. Share post
-    try:
-        result = share_post(event.photo_url, caption)
-        # Save event to MongoDB
-        db.events.insert_one({
-            "name": event.name,
-            "date": event.date,
-            "venue": event.venue,
-            "price": event.price,
-            "audience": event.audience,
-            "photo_url": event.photo_url,
-            "caption": caption,
-            "share_result": result
-        })
-        return {"result": result, "caption": caption}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Post sharing failed: {e}")
+    # Share post
+    post_result = share_post(event.photo_url, caption)
+
+    # Save to MongoDB
+    event_doc = event_dict.copy()
+    event_doc["caption"] = caption
+    event_doc["post_result"] = post_result
+    db["events"].insert_one(event_doc)
+
+    return {
+        "caption": caption,
+        "post_result": post_result
+    }
 

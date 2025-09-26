@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material'
 const SignIn = React.lazy(() => import('./auth/SignIn.jsx'))
 const SignUp = React.lazy(() => import('./auth/SignUp.jsx'))
 const Profile = React.lazy(() => import('./pages/Profile.jsx'))
+const AutoShareForm = React.lazy(() => import('./pages/AutoShareForm.jsx'))
 
 const theme = createTheme()
 
@@ -13,6 +14,7 @@ const router = createBrowserRouter([
   { path: '/login', element: <SignIn /> },
   { path: '/register', element: <SignUp /> },
   { path: '/me', element: <Profile /> },
+  { path: '/AutoShareForm ', element: <AutoShareForm  /> },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(

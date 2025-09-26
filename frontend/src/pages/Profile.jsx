@@ -2,7 +2,6 @@ import * as React from 'react'
 import { me } from "../api/auth";
 import { useNavigate } from 'react-router-dom'
 import { Container, CssBaseline, Box, Typography, Button } from '@mui/material'
-import AutoShareForm from "./AutoShareForm";
 
 export default function Profile() {
   const [user, setUser] = React.useState(null)
@@ -49,7 +48,6 @@ export default function Profile() {
         <Button onClick={logout} sx={{ mt: 3 }} variant="outlined">
           Logout
         </Button>
-        <AutoShareForm />
       </Box>
     </Container>
   )
