@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const User = require('../models/User');
 const axios = require('axios');
+const FormData = require('form-data');
 const fs = require('fs');
 
 const upload = multer({
@@ -48,13 +49,18 @@ async function removeBackground(imagePath) {
       throw new Error('Failed to remove background');
     }
 
-    const processedImagePath = resolvedPath.replace(/(\.\w+)$/, '-bg-removed$1');
-    fs.writeFileSync(processedImagePath, response.data);
-    return processedImagePath;
+    const baseName = path.basename(resolvedPath, path.extname(resolvedPath));
+    const dirPath = path.dirname(resolvedPath);
+    const processedFsPath = path.join(dirPath, `${baseName}-bg-removed.png`);
+    fs.writeFileSync(processedFsPath, response.data);
+
+    // Return public web path for client consumption
+    const processedWebPath = `/uploads/${path.basename(processedFsPath)}`;
+    return processedWebPath;
   } catch (error) {
     console.error('Error in removeBackground function:', error.message || error);
     // Fallback: Return the original image path if background removal fails
-    return resolvedPath;
+    return imagePath;
   }
 }
 

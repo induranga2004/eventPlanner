@@ -19,3 +19,13 @@ export async function me() {
   return data
 }
 
+export async function reprocessAdditionalPhoto() {
+  const { data } = await api.post('/reprocess/additional-photo')
+  return data
+}
+
+export async function reprocessAllPhotos() {
+  const { data } = await api.post('/reprocess/photos')
+  return data
+}
+
