@@ -8,6 +8,7 @@ const User = require('../models/User');
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
+const { removeBackground } = require('../utils/removeBackground');
 
 const upload = multer({
   dest: path.join(__dirname, '../../uploads'),
@@ -17,60 +18,30 @@ const upload = multer({
 const uploadFields = upload.fields([
   { name: 'photo', maxCount: 1 },
   { name: 'additionalPhoto', maxCount: 1 },
+  { name: 'logo', maxCount: 1 },
 ]);
 
 const signToken = (user) =>
   jwt.sign({ sub: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '30m' });
 
-async function removeBackground(imagePath) {
-  const apiKey = process.env.BG_REMOVE_API_KEY; // Ensure this is set in your environment variables
-  const url = 'https://api.remove.bg/v1.0/removebg';
-
-  // Ensure the path is resolved relative to the uploads directory
-  const resolvedPath = path.join(__dirname, '../../uploads', path.basename(imagePath));
-  console.log('Resolved Path:', resolvedPath); // Debugging: Log the resolved file path
-
-  try {
-    const formData = new FormData();
-    formData.append('image_file', fs.createReadStream(resolvedPath));
-    formData.append('size', 'auto');
-
-    const response = await axios.post(url, formData, {
-      headers: {
-        ...formData.getHeaders(),
-        'X-Api-Key': apiKey,
-      },
-      responseType: 'arraybuffer',
-    });
-
-    console.log('Remove Background API Response:', response.data); // Debugging: Log the API response
-
-    if (response.status !== 200) {
-      throw new Error('Failed to remove background');
-    }
-
-    const baseName = path.basename(resolvedPath, path.extname(resolvedPath));
-    const dirPath = path.dirname(resolvedPath);
-    const processedFsPath = path.join(dirPath, `${baseName}-bg-removed.png`);
-    fs.writeFileSync(processedFsPath, response.data);
-
-    // Return public web path for client consumption
-    const processedWebPath = `/uploads/${path.basename(processedFsPath)}`;
-    return processedWebPath;
-  } catch (error) {
-    console.error('Error in removeBackground function:', error.message || error);
-    // Fallback: Return the original image path if background removal fails
-    return imagePath;
-  }
-}
 
 // POST /api/auth/register
 router.post('/register', uploadFields, async (req, res) => {
   console.log('Request Body:', req.body);
   console.log('Uploaded Files:', req.files);
 
-  const { email, password, role, name, phone, spotifyLink, venueAddress, capacity } = req.body || {};
-  if (!email || !password || !role || !name) {
+  const { 
+    email, password, role, name, phone, spotifyLink, venueAddress, capacity,
+    // Music band fields
+    bandName, genres, members, experience, equipment, bio, youtubeLink, instagramLink, facebookLink,
+    // Lights and sounds fields
+    companyName, contactPerson, address, lightTypes, eventTypes, services, crewSize, equipmentDetails, website
+  } = req.body || {};
+  
+  // Determine the name field based on role
+  const displayName = role === 'music_band' ? bandName : (role === 'lights' || role === 'sounds') ? companyName : name;
+  
+  if (!email || !password || !role || !displayName) {
     return res.status(400).json({ error: 'email, password, role, and name are required' });
   }
 
@@ -83,26 +54,55 @@ router.post('/register', uploadFields, async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const userData = { email, passwordHash, role, name, phone };
+  const userData = { email, passwordHash, role, name: displayName, phone };
 
   try {
-    if (req.files['photo']) {
+    if (req.files && req.files['photo']) {
       const photoPath = `/uploads/${req.files['photo'][0].filename}`;
       userData.photo = photoPath;
       userData.photoBgRemoved = await removeBackground(photoPath);
     }
 
-    if (req.files['additionalPhoto']) {
+    if (req.files && req.files['additionalPhoto']) {
       const additionalPhotoPath = `/uploads/${req.files['additionalPhoto'][0].filename}`;
       userData.additionalPhoto = additionalPhotoPath;
       userData.additionalPhotoBgRemoved = await removeBackground(additionalPhotoPath);
     }
 
+    if (req.files && req.files['logo']) {
+      const logoPath = `/uploads/${req.files['logo'][0].filename}`;
+      userData.logo = logoPath;
+    }
+
+    // Handle role-specific fields
     if (role === 'musician') {
       userData.spotifyLink = spotifyLink;
     } else if (role === 'venue') {
       userData.venueAddress = venueAddress;
       userData.capacity = capacity;
+    } else if (role === 'music_band') {
+      userData.bandName = bandName;
+      userData.genres = genres;
+      userData.members = members;
+      userData.experience = experience;
+      userData.equipment = equipment;
+      userData.bio = bio;
+      userData.spotifyLink = spotifyLink;
+      userData.youtubeLink = youtubeLink;
+      userData.instagramLink = instagramLink;
+      userData.facebookLink = facebookLink;
+    } else if (role === 'lights' || role === 'sounds') {
+      userData.companyName = companyName;
+      userData.contactPerson = contactPerson;
+      userData.address = address;
+      userData.lightTypes = lightTypes;
+      userData.eventTypes = eventTypes;
+      userData.services = services;
+      userData.crewSize = crewSize;
+      userData.equipmentDetails = equipmentDetails;
+      userData.website = website;
+      userData.instagramLink = instagramLink;
+      userData.facebookLink = facebookLink;
     }
 
     const user = await User.create(userData);

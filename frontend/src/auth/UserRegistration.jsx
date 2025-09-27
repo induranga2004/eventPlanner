@@ -10,18 +10,13 @@ export default function UserRegistration() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const payload = {
-      role: 'user',
-      name: data.get('name'),
-      email: data.get('email'),
-      phone: data.get('phone'),
-      password: data.get('password'),
-    };
+    const formData = new FormData(event.currentTarget);
+    formData.append('role', 'user');
+
     setLoading(true);
     setError('');
     try {
-      const res = await register(payload);
+      const res = await register(formData);
       if (res.token) localStorage.setItem('token', res.token);
       navigate('/me');
     } catch (e) {

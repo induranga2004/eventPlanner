@@ -10,13 +10,86 @@ const SignIn = React.lazy(() => import('./auth/SignIn.jsx'))
 const RoleSelection = React.lazy(() => import('./auth/RoleSelection.jsx'))
 const UserRegistration = React.lazy(() => import('./auth/UserRegistration.jsx'))
 const MusicianRegistration = React.lazy(() => import('./auth/MusicianRegistration.jsx'))
+const MusicBandRegistration = React.lazy(() => import('./auth/MusicBandRegistration.jsx'))
 const VenueRegistration = React.lazy(() => import('./auth/VenueRegistration.jsx'))
+const LightsRegistration = React.lazy(() => import('./auth/LightsRegistration.jsx'))
+const SoundsRegistration = React.lazy(() => import('./auth/SoundsRegistration.jsx'))
 const Profile = React.lazy(() => import('./pages/Profile.jsx'))
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const theme = createTheme()
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+      light: '#42a5f5',
+      dark: '#1565c0',
+    },
+    secondary: {
+      main: '#9c27b0',
+      light: '#ba68c8',
+      dark: '#7b1fa2',
+    },
+    success: {
+      main: '#2e7d32',
+      light: '#4caf50',
+      dark: '#1b5e20',
+    },
+    warning: {
+      main: '#f57c00',
+      light: '#ffb74d',
+      dark: '#e65100',
+    },
+    info: {
+      main: '#0288d1',
+      light: '#29b6f6',
+      dark: '#01579b',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontWeight: 700,
+    },
+    h2: {
+      fontWeight: 600,
+    },
+    h3: {
+      fontWeight: 600,
+    },
+    h4: {
+      fontWeight: 600,
+    },
+    h5: {
+      fontWeight: 600,
+    },
+    h6: {
+      fontWeight: 600,
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+  },
+})
 
 const router = createBrowserRouter([
   { path: '/', element: <SignIn /> },
@@ -24,7 +97,10 @@ const router = createBrowserRouter([
   { path: '/register', element: <RoleSelection /> },
   { path: '/register/user', element: <UserRegistration /> },
   { path: '/register/musician', element: <MusicianRegistration /> },
+  { path: '/register/music_band', element: <MusicBandRegistration /> },
   { path: '/register/venue', element: <VenueRegistration /> },
+  { path: '/register/lights', element: <LightsRegistration /> },
+  { path: '/register/sounds', element: <SoundsRegistration /> },
   { path: '/me', element: <Profile /> },
   { path: '/user-dashboard', element: <UserDashboard /> },
   { path: '/musician-dashboard', element: <MusicianDashboard /> },

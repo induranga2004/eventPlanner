@@ -3,11 +3,13 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 
-async function removeBackground(imageWebPath) {
-  const apiKey = process.env.BG_REMOVE_API_KEY;
+async function removeBackground(imagePath) {
+  const apiKey = process.env.BG_REMOVE_API_KEY; // Ensure this is set in your environment variables
   const url = 'https://api.remove.bg/v1.0/removebg';
 
-  const resolvedPath = path.join(__dirname, '../../uploads', path.basename(imageWebPath));
+  // Ensure the path is resolved relative to the uploads directory
+  const resolvedPath = path.join(__dirname, '../../uploads', path.basename(imagePath));
+  console.log('Resolved Path:', resolvedPath); // Debugging: Log the resolved file path
 
   try {
     const formData = new FormData();
@@ -20,26 +22,27 @@ async function removeBackground(imageWebPath) {
         'X-Api-Key': apiKey,
       },
       responseType: 'arraybuffer',
-      timeout: 30000,
     });
 
+    console.log('Remove Background API Response:', response.data); // Debugging: Log the API response
+
     if (response.status !== 200) {
-      throw new Error(`remove.bg failed: ${response.status}`);
+      throw new Error('Failed to remove background');
     }
 
-    const base = path.basename(resolvedPath, path.extname(resolvedPath));
-    const dir = path.dirname(resolvedPath);
-    const processedFsPath = path.join(dir, `${base}-bg-removed.png`);
+    const baseName = path.basename(resolvedPath, path.extname(resolvedPath));
+    const dirPath = path.dirname(resolvedPath);
+    const processedFsPath = path.join(dirPath, `${baseName}-bg-removed.png`);
     fs.writeFileSync(processedFsPath, response.data);
 
-    return `/uploads/${path.basename(processedFsPath)}`;
+    // Return public web path for client consumption
+    const processedWebPath = `/uploads/${path.basename(processedFsPath)}`;
+    return processedWebPath;
   } catch (error) {
-    console.error('[removeBackground] error:', error?.message || error);
-    return imageWebPath; // fallback to original
+    console.error('Error in removeBackground function:', error.message || error);
+    // Fallback: Return the original image path if background removal fails
+    return imagePath;
   }
 }
 
 module.exports = { removeBackground };
-
-
-
