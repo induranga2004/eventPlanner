@@ -22,10 +22,68 @@ MILESTONES = [
     (0,   "Event day"),
 ]
 
+# Event-specific concept names
+EVENT_CONCEPT_NAMES = {
+    "wedding": {
+        "A1": "Grand Wedding Luxury",
+        "A2": "Garden Wedding Romance", 
+        "A3": "Modern Wedding Chic",
+        "A4": "Traditional Wedding Heritage"
+    },
+    "birthday": {
+        "A1": "Birthday Celebration Deluxe",
+        "A2": "Garden Birthday Party",
+        "A3": "Modern Birthday Bash",
+        "A4": "Traditional Birthday Gathering"
+    },
+    "concert": {
+        "A1": "Premium Concert Experience", 
+        "A2": "Outdoor Concert Festival",
+        "A3": "Modern Concert Production",
+        "A4": "Cultural Concert Showcase"
+    },
+    "corporate": {
+        "A1": "Executive Corporate Event",
+        "A2": "Garden Corporate Retreat", 
+        "A3": "Modern Corporate Summit",
+        "A4": "Traditional Corporate Gala"
+    },
+    "graduation": {
+        "A1": "Luxury Graduation Ceremony",
+        "A2": "Garden Graduation Celebration",
+        "A3": "Modern Graduation Party",
+        "A4": "Traditional Graduation Honor"
+    },
+    "workshop": {
+        "A1": "Premium Workshop Experience",
+        "A2": "Outdoor Workshop Retreat",
+        "A3": "Modern Workshop Session",
+        "A4": "Traditional Workshop Gathering"
+    },
+    "anniversary": {
+        "A1": "Grand Anniversary Celebration",
+        "A2": "Garden Anniversary Party",
+        "A3": "Modern Anniversary Event",
+        "A4": "Traditional Anniversary Gathering"
+    },
+    "conference": {
+        "A1": "Executive Conference Summit",
+        "A2": "Outdoor Conference Retreat",
+        "A3": "Modern Conference Experience",
+        "A4": "Traditional Conference Gathering"
+    },
+    "default": {
+        "A1": "Grand Luxury Experience",
+        "A2": "Garden Party Elegance", 
+        "A3": "Modern Minimalist Chic",
+        "A4": "Cultural Heritage Celebration"
+    }
+}
+
 # Different concept themes with unique characteristics
 CONCEPT_THEMES = {
     "A1": {
-        "title": "Grand Luxury Experience",
+        "base_title": "Grand Luxury Experience",
         "venue_preference": "luxury_hotel",
         "catering_style": "premium_plated",
         "decorations": "Premium florals & crystal chandeliers",
@@ -38,7 +96,7 @@ CONCEPT_THEMES = {
         "other_weights": {"decoration": 0.15, "entertainment": 0.07, "logistics": 0.03}
     },
     "A2": {
-        "title": "Garden Party Elegance",
+        "base_title": "Garden Party Elegance",
         "venue_preference": "garden_outdoor",
         "catering_style": "gourmet_buffet",
         "decorations": "Natural florals & fairy light canopies",
@@ -51,7 +109,7 @@ CONCEPT_THEMES = {
         "other_weights": {"decoration": 0.20, "entertainment": 0.07, "logistics": 0.03}
     },
     "A3": {
-        "title": "Modern Minimalist Chic",
+        "base_title": "Modern Minimalist Chic",
         "venue_preference": "modern_space",
         "catering_style": "contemporary_stations",
         "decorations": "Clean lines & dramatic lighting",
@@ -64,7 +122,7 @@ CONCEPT_THEMES = {
         "other_weights": {"decoration": 0.12, "entertainment": 0.15, "logistics": 0.08}
     },
     "A4": {
-        "title": "Cultural Heritage Celebration",
+        "base_title": "Cultural Heritage Celebration",
         "venue_preference": "cultural_historic",
         "catering_style": "traditional_family",
         "decorations": "Traditional motifs & cultural elements",
@@ -150,11 +208,19 @@ def apply_venue_lead_time(event_date: _date, milestones, lead_days: int):
 def concept_ids(n: int) -> List[str]:
     return [f"A{i}" for i in range(1, n + 1)]
 
-def pick_title(concept_id: str) -> str:
-    return CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])["title"]
+def pick_title(concept_id: str, event_type: str = "default") -> str:
+    """Get event-specific concept title"""
+    event_type = event_type.lower() if event_type else "default"
+    
+    # Get event-specific names or fall back to default
+    event_names = EVENT_CONCEPT_NAMES.get(event_type, EVENT_CONCEPT_NAMES["default"])
+    return event_names.get(concept_id, CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])["base_title"])
 
-def pick_concept_details(concept_id: str) -> dict:
-    return CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
+def pick_concept_details(concept_id: str, event_type: str = "default") -> dict:
+    """Get concept details with dynamic title based on event type"""
+    details = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"]).copy()
+    details["title"] = pick_title(concept_id, event_type)
+    return details
 
 def pick_assumptions(concept_id: str) -> List[str]:
     theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])

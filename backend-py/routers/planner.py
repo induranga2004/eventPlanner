@@ -19,7 +19,7 @@ from agents.catering_openai import suggest_catering_with_openai  # <-- NEW
 
 router = APIRouter(prefix="/campaigns", tags=["planner"])
 
-EventType = Literal["wedding", "concert", "corporate", "workshop", "birthday"]
+EventType = Literal["wedding", "concert", "corporate", "workshop", "birthday", "graduation", "anniversary", "conference"]
 
 class WizardInput(BaseModel):
     campaign_id: str
@@ -94,9 +94,9 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     suggested_venues = find_venues(body.city, body.event_type, top_k=10)
     
     for idx, cid in enumerate(ids):
-        title = pick_title(cid)
+        title = pick_title(cid, body.event_type)
         assumptions = pick_assumptions(cid)
-        concept_details = pick_concept_details(cid)
+        concept_details = pick_concept_details(cid, body.event_type)
         
         # Generate initial costs based on concept theme
         cost_pairs = generate_costs(body.total_budget_lkr, cid)
