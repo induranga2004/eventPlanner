@@ -3,6 +3,8 @@ uvicorn
 crewai
 openai
 python-dotenv
+requests
+APScheduler
 
 
 # pip install -r requirements.txt

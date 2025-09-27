@@ -19,6 +19,8 @@ app.get('/api/health', (req, res) => {
 // routes
 app.use('/api/auth', require('./src/auth/auth.routes'));
 app.use('/api', require('./src/auth/protected.routes'));
+app.use('/api', require('./src/routes/autoShare.routes'));
+app.use('/api', require('./src/routes/events.routes'));
 
 // 404 for other /api routes
 app.use('/api', (req, res) => {
@@ -38,19 +40,26 @@ app.use((err, req, res, next) => {
 // start
 (async () => {
   const PORT = process.env.PORT || 4000;
+  const NO_DB_SAVE = String(process.env.NO_DB_SAVE || '').trim().toLowerCase() === 'true';
   const MONGO_URI = process.env.MONGO_URI;
-  if (!MONGO_URI) {
-    console.error('Missing MONGO_URI in environment');
-    process.exit(1);
-  }
-  try {
-    await mongoose.connect(MONGO_URI);
-    if (process.env.NODE_ENV !== 'production') {
-      console.info('[api] connected to MongoDB');
+  if (!NO_DB_SAVE) {
+    if (!MONGO_URI) {
+      console.error('Missing MONGO_URI in environment');
+      process.exit(1);
     }
-  } catch (e) {
-    console.error('Mongo connection error:', e?.message || e);
-    process.exit(1);
+    try {
+      await mongoose.connect(MONGO_URI);
+      if (process.env.NODE_ENV !== 'production') {
+        console.info('[api] connected to MongoDB');
+      }
+    } catch (e) {
+      console.error('Mongo connection error:', e?.message || e);
+      process.exit(1);
+    }
+  } else {
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('[api] NO_DB_SAVE=true: skipping MongoDB connection');
+    }
   }
   const server = app.listen(PORT, () =>
     console.log(`API running http://localhost:${PORT}`)

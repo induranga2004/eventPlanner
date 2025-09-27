@@ -37,3 +37,4 @@ pip-wheel-metadata/
 *.egg-info/
 dist/
 build/
+backend-py/config/secrets_override.py

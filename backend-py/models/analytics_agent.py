@@ -2,7 +2,7 @@ import requests
 from config.config import IG_ACCESS_TOKEN
 
 def fetch_post_metrics(post_id):
-    url = f"https://graph.facebook.com/v17.0/{post_id}"
+    url = f"https://graph.facebook.com/v23.0/{post_id}"
     fields = "like_count,comments_count,insights.metric(impressions)"
     res = requests.get(f"{url}?fields={fields}&access_token={IG_ACCESS_TOKEN}")
     data = res.json()
