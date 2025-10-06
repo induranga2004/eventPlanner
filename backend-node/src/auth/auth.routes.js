@@ -8,6 +8,7 @@ const User = require('../models/User');
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
+// Background removal feature disabled: keep a noop import for compatibility
 const { removeBackground } = require('../utils/removeBackground');
 
 const upload = multer({
@@ -60,13 +61,15 @@ router.post('/register', uploadFields, async (req, res) => {
     if (req.files && req.files['photo']) {
       const photoPath = `/uploads/${req.files['photo'][0].filename}`;
       userData.photo = photoPath;
-      userData.photoBgRemoved = await removeBackground(photoPath);
+      // Background removal disabled: keep original photo path in photoBgRemoved for backward compatibility
+      userData.photoBgRemoved = photoPath;
     }
 
     if (req.files && req.files['additionalPhoto']) {
       const additionalPhotoPath = `/uploads/${req.files['additionalPhoto'][0].filename}`;
       userData.additionalPhoto = additionalPhotoPath;
-      userData.additionalPhotoBgRemoved = await removeBackground(additionalPhotoPath);
+      // Background removal disabled: keep original additional photo path in additionalPhotoBgRemoved
+      userData.additionalPhotoBgRemoved = additionalPhotoPath;
     }
 
     if (req.files && req.files['logo']) {

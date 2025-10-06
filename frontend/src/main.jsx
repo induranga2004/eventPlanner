@@ -6,6 +6,9 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import MusicianDashboard from './components/MusicianDashboard'
 import VenueDashboard from './components/VenueDashboard'
 import UserDashboard from './components/UserDashboard'
+import MusicBandDashboard from './components/MusicBandDashboard'
+import LightsDashboard from './components/LightsDashboard'
+import SoundsDashboard from './components/SoundsDashboard'
 const SignIn = React.lazy(() => import('./auth/SignIn.jsx'))
 const RoleSelection = React.lazy(() => import('./auth/RoleSelection.jsx'))
 const UserRegistration = React.lazy(() => import('./auth/UserRegistration.jsx'))
@@ -45,6 +48,33 @@ const theme = createTheme({
       main: '#0288d1',
       light: '#29b6f6',
       dark: '#01579b',
+    },
+    // role based palettes for dashboards
+    roles: {
+      musician: {
+        main: '#7c4dff',
+        gradient: 'linear-gradient(120deg, #8e7dff 0%, #5e35b1 100%)',
+      },
+      venue: {
+        main: '#ff7043',
+        gradient: 'linear-gradient(120deg, #ff8a65 0%, #d84315 100%)',
+      },
+      music_band: {
+        main: '#6ee7b7',
+        gradient: 'linear-gradient(120deg, #86efac 0%, #059669 100%)',
+      },
+      lights: {
+        main: '#f59e0b',
+        gradient: 'linear-gradient(120deg, #fbbf24 0%, #f97316 100%)',
+      },
+      sounds: {
+        main: '#06b6d4',
+        gradient: 'linear-gradient(120deg, #67e8f9 0%, #0891b2 100%)',
+      },
+      user: {
+        main: '#3b82f6',
+        gradient: 'linear-gradient(120deg, #60a5fa 0%, #1e40af 100%)',
+      },
     },
   },
   typography: {
@@ -104,7 +134,10 @@ const router = createBrowserRouter([
   { path: '/me', element: <Profile /> },
   { path: '/user-dashboard', element: <UserDashboard /> },
   { path: '/musician-dashboard', element: <MusicianDashboard /> },
+  { path: '/music_band-dashboard', element: <MusicBandDashboard /> },
   { path: '/venue-dashboard', element: <VenueDashboard /> },
+  { path: '/lights-dashboard', element: <LightsDashboard /> },
+  { path: '/sounds-dashboard', element: <SoundsDashboard /> },
 ])
 
 const App = () => {

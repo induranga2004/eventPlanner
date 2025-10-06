@@ -43,17 +43,17 @@ app.use((err, req, res, next) => {
   const PORT = process.env.PORT || 4000;
   const MONGO_URI = process.env.MONGO_URI;
   if (!MONGO_URI) {
-    console.error('Missing MONGO_URI in environment');
-    process.exit(1);
-  }
-  try {
-    await mongoose.connect(MONGO_URI);
-    if (process.env.NODE_ENV !== 'production') {
-      console.info('[api] connected to MongoDB');
+    console.warn('No MONGO_URI provided — starting server without database connection (read-only or limited functionality).');
+  } else {
+    try {
+      await mongoose.connect(MONGO_URI);
+      if (process.env.NODE_ENV !== 'production') {
+        console.info('[api] connected to MongoDB');
+      }
+    } catch (e) {
+      console.error('Mongo connection error:', e?.message || e);
+      console.warn('Continuing without DB connection — some routes may fail.');
     }
-  } catch (e) {
-    console.error('Mongo connection error:', e?.message || e);
-    process.exit(1);
   }
   const server = app.listen(PORT, () =>
     console.log(`API running http://localhost:${PORT}`)

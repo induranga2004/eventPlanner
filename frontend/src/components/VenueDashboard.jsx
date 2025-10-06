@@ -1,14 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Alert } from '@mui/material';
+import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Alert, IconButton } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
-import { me, reprocessAdditionalPhoto, reprocessAllPhotos } from '../api/auth';
+import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+
+const Sparkline = ({ values = [], color = '#2e7d32', width = 100, height = 28 }) => {
+  if (!values || values.length === 0) return null;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const points = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * width;
+    const y = height - ((v - min) / (max - min || 1)) * height;
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      <polyline fill="none" stroke={color} strokeWidth="2" points={points} />
+    </svg>
+  );
+};
 
 const VenueDashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [reprocessing, setReprocessing] = useState(false);
+  
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
@@ -34,40 +53,7 @@ const VenueDashboard = () => {
     navigate('/login');
   };
 
-  const handleReprocessPhotos = async () => {
-    if (!user?.additionalPhoto) {
-      setMessage('No additional photo to process');
-      return;
-    }
-    
-    setReprocessing(true);
-    setMessage('');
-    try {
-      const data = await reprocessAdditionalPhoto();
-      setUser(data.user);
-      setMessage('Background removal completed successfully!');
-    } catch (error) {
-      setMessage('Failed to process photos. Please try again.');
-      console.error('Reprocess error:', error);
-    } finally {
-      setReprocessing(false);
-    }
-  };
-
-  const handleReprocessBoth = async () => {
-    setReprocessing(true);
-    setMessage('');
-    try {
-      const data = await reprocessAllPhotos();
-      setUser(data.user);
-      setMessage('Background removal completed for all photos!');
-    } catch (error) {
-      setMessage('Failed to process photos. Please try again.');
-      console.error('Reprocess all error:', error);
-    } finally {
-      setReprocessing(false);
-    }
-  };
+  // Background removal feature removed. No reprocess handlers.
 
   if (loading) {
     return <Container><Typography>Loading...</Typography></Container>;
@@ -78,8 +64,30 @@ const VenueDashboard = () => {
   }
 
   return (
-    <DashboardLayout title="Venue Dashboard" navItems={[{ label: 'Profile', to: '/me' }]}> 
+  <DashboardLayout title="Venue Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="venue"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Profile header with banner */}
+        <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden' }}>
+          <Box sx={{ height: 160, background: 'linear-gradient(90deg,#11998e,#38ef7d)', position: 'relative' }} />
+          <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, mt: -8 }}>
+            <Avatar sx={{ width: 96, height: 96, border: '4px solid white', bgcolor: 'success.main' }}>
+              {user.name?.charAt(0)?.toUpperCase()}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h5">{user.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}</Typography>
+                </Box>
+                <Box>
+                  <IconButton color="primary" onClick={() => navigate('/me')}><EditIcon /></IconButton>
+                </Box>
+              </Box>
+              {user.venueAddress && (<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{user.venueAddress}</Typography>)}
+            </Box>
+          </Box>
+        </Paper>
+
         <Grid container spacing={3} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard title="Bookings" value="—" subtitle="This month" />
@@ -99,21 +107,6 @@ const VenueDashboard = () => {
             {message}
           </Alert>
         )}
-        <Paper elevation={3} sx={{ p: 4 }}>
-        <Box display="flex" alignItems="center" mb={3}>
-          <Avatar sx={{ width: 64, height: 64, mr: 2, bgcolor: 'success.main' }}>
-            {user.name?.charAt(0)?.toUpperCase()}
-          </Avatar>
-          <Box>
-            <Typography variant="h4" component="h1">
-              Welcome, {user.name}!
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Venue Dashboard
-            </Typography>
-          </Box>
-        </Box>
-
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Paper elevation={1} sx={{ p: 3 }}>
@@ -154,7 +147,7 @@ const VenueDashboard = () => {
           <Grid item xs={12} md={6}>
             <Paper elevation={1} sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Venue Information
+                Photos & Venue Info
               </Typography>
               {user.venueAddress && (
                 <Box sx={{ mb: 2 }}>
@@ -198,11 +191,27 @@ const VenueDashboard = () => {
             </Paper>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} md={4}>
             <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Venue Management
-              </Typography>
+              <Typography variant="h6" gutterBottom>Contact & Bookings</Typography>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">Contact</Typography>
+                <Typography variant="body1">{user.phone || 'Not provided'}</Typography>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">Capacity</Typography>
+                <Typography variant="body1">{user.capacity || '—'} people</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button startIcon={<CalendarTodayIcon />} size="small" variant="contained" onClick={() => navigate('/me')}>Open Calendar</Button>
+                <Sparkline values={[1,2,1,3,4,6,5,7,6,8]} />
+              </Box>
+            </Paper>
+          </Grid>
+
+          <Grid item xs={12} md={8}>
+            <Paper elevation={1} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>Venue Management</Typography>
               <Box sx={{ 
                 display: 'grid', 
                 gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
@@ -233,30 +242,13 @@ const VenueDashboard = () => {
                 >
                   View Full Profile
                 </Button>
+                {/* Background removal feature removed - replaced with View Full Profile / Manage actions */}
                 <Button 
                   variant="contained" 
                   color="secondary"
-                  onClick={handleReprocessPhotos} 
-                  disabled={reprocessing || !user?.additionalPhoto}
-                  sx={{ 
-                    background: 'linear-gradient(45deg, #9C27B0 30%, #E91E63 90%)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #7B1FA2 30%, #C2185B 90%)',
-                    },
-                    '&:disabled': {
-                      background: 'rgba(0, 0, 0, 0.12)',
-                      color: 'rgba(0, 0, 0, 0.26)'
-                    }
-                  }}
+                  onClick={() => navigate('/me')}
                 >
-                  {reprocessing ? 'Processing...' : 'Remove Background'}
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  color="secondary"
-                  onClick={handleReprocessBoth}
-                >
-                  Process All Photos
+                  View Full Profile
                 </Button>
                 <Button 
                   variant="outlined" 
@@ -315,7 +307,6 @@ const VenueDashboard = () => {
             </Paper>
           </Grid>
         </Grid>
-        </Paper>
       </Container>
     </DashboardLayout>
   );

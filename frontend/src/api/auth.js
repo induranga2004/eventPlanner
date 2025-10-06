@@ -15,17 +15,42 @@ export async function login(email, password) {
 }
 
 export async function me() {
-  const { data } = await api.get('/me')
-  return data
+  try {
+    const { data } = await api.get('/me')
+    return data
+  } catch (err) {
+    // Dev fallback: return mock user data so dashboards render without a DB
+    if (import.meta.env.DEV) {
+      return {
+        user: {
+          _id: 'dev-user-1',
+          name: 'Alex Rivera',
+          email: 'alex@example.com',
+          phone: '+1 (555) 123-4567',
+          role: 'musician',
+          createdAt: new Date().toISOString(),
+          spotifyLink: 'https://open.spotify.com/artist/example',
+          photo: '/uploads/sample1.png',
+          additionalPhoto: '/uploads/sample2.png',
+          photoBgRemoved: '/uploads/sample1.png',
+          additionalPhotoBgRemoved: '/uploads/sample2.png',
+          capacity: null,
+        }
+      }
+    }
+    throw err
+  }
 }
 
 export async function reprocessAdditionalPhoto() {
-  const { data } = await api.post('/reprocess/additional-photo')
-  return data
+  // Background removal disabled on server; return fresh user data instead
+  const { data } = await api.get('/me');
+  return { user: data.user, message: 'Background removal feature disabled' };
 }
 
 export async function reprocessAllPhotos() {
-  const { data } = await api.post('/reprocess/photos')
-  return data
+  // Background removal disabled on server; return fresh user data instead
+  const { data } = await api.get('/me');
+  return { user: data.user, message: 'Background removal feature disabled' };
 }
 

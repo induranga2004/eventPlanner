@@ -14,10 +14,20 @@ import MenuIcon from '@mui/icons-material/Menu'
 import Divider from '@mui/material/Divider'
 import Button from '@mui/material/Button'
 import { useNavigate } from 'react-router-dom'
+import { styled } from '@mui/material/styles'
 
 const drawerWidth = 260
 
-export default function DashboardLayout({ title = 'Dashboard', navItems = [], children }) {
+const PulseBox = styled(Box)`
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+  }
+  animation: pulse 2.6s infinite;
+`
+
+export default function DashboardLayout({ title = 'Dashboard', navItems = [], children, role = 'user' }) {
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const navigate = useNavigate()
 
@@ -28,6 +38,26 @@ export default function DashboardLayout({ title = 'Dashboard', navItems = [], ch
   const drawer = (
     <div>
       <Toolbar />
+      <Box sx={{ px: 2, py: 2 }}>
+        <Box sx={{
+          height: 64,
+          borderRadius: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          px: 1,
+          background: (theme) => (theme.palette.roles?.[role]?.gradient || theme.palette.primary.main),
+          color: '#fff',
+          boxShadow: (theme) => '0 6px 18px rgba(0,0,0,0.08)',
+          transform: 'translateY(0)',
+          transition: 'transform 320ms ease',
+        }}>
+          <PulseBox sx={{ width: 36, height: 36, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ width: 18, height: 18, borderRadius: 0.5, bgcolor: 'white' }} />
+          </PulseBox>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{title}</Typography>
+        </Box>
+      </Box>
       <Divider />
       <List>
         {navItems.map((item) => (
@@ -88,7 +118,7 @@ export default function DashboardLayout({ title = 'Dashboard', navItems = [], ch
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, bgcolor: (theme) => theme.palette.mode === 'light' ? '#fff' : theme.palette.background.paper },
           }}
         >
           {drawer}
@@ -101,7 +131,12 @@ export default function DashboardLayout({ title = 'Dashboard', navItems = [], ch
           }}
           open
         >
-          {drawer}
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+            {drawer}
+            <Box sx={{ p: 2 }}>
+              <Typography variant="caption" color="text.secondary">Made with ♥</Typography>
+            </Box>
+          </Box>
         </Drawer>
       </Box>
       <Box

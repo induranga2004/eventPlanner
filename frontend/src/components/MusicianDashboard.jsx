@@ -1,14 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Link, Alert } from '@mui/material';
+import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Link, Alert, IconButton } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
-import { me, reprocessAdditionalPhoto, reprocessAllPhotos } from '../api/auth';
+import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+
+// Small inline sparkline to visualize recent activity
+const Sparkline = ({ values = [], color = '#1976d2', width = 100, height = 28 }) => {
+  if (!values || values.length === 0) return null;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const points = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * width;
+    const y = height - ((v - min) / (max - min || 1)) * height;
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      <polyline fill="none" stroke={color} strokeWidth="2" points={points} />
+    </svg>
+  );
+};
 
 const MusicianDashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [reprocessing, setReprocessing] = useState(false);
+  
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
@@ -34,40 +54,7 @@ const MusicianDashboard = () => {
     navigate('/login');
   };
 
-  const handleReprocessPhotos = async () => {
-    if (!user?.additionalPhoto) {
-      setMessage('No additional photo to process');
-      return;
-    }
-    
-    setReprocessing(true);
-    setMessage('');
-    try {
-      const data = await reprocessAdditionalPhoto();
-      setUser(data.user);
-      setMessage('Background removal completed successfully!');
-    } catch (error) {
-      setMessage('Failed to process photos. Please try again.');
-      console.error('Reprocess error:', error);
-    } finally {
-      setReprocessing(false);
-    }
-  };
-
-  const handleReprocessBoth = async () => {
-    setReprocessing(true);
-    setMessage('');
-    try {
-      const data = await reprocessAllPhotos();
-      setUser(data.user);
-      setMessage('Background removal completed for all photos!');
-    } catch (error) {
-      setMessage('Failed to process photos. Please try again.');
-      console.error('Reprocess all error:', error);
-    } finally {
-      setReprocessing(false);
-    }
-  };
+  // Background removal feature removed. No reprocess handlers.
 
   if (loading) {
     return <Container><Typography>Loading...</Typography></Container>;
@@ -78,8 +65,30 @@ const MusicianDashboard = () => {
   }
 
   return (
-    <DashboardLayout title="Musician Dashboard" navItems={[{ label: 'Profile', to: '/me' }]}> 
+    <DashboardLayout title="Musician Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="musician"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Profile header with banner */}
+        <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden' }}>
+          <Box sx={{ height: 160, background: 'linear-gradient(90deg,#6a11cb,#2575fc)', position: 'relative' }} />
+          <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, mt: -8 }}>
+            <Avatar sx={{ width: 96, height: 96, border: '4px solid white', bgcolor: 'secondary.main' }}>
+              {user.name?.charAt(0)?.toUpperCase()}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h5">{user.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}</Typography>
+                </Box>
+                <Box>
+                  <IconButton color="primary" onClick={() => navigate('/me')}><EditIcon /></IconButton>
+                </Box>
+              </Box>
+              {user.spotifyLink && (<Link href={user.spotifyLink} target="_blank" rel="noopener" sx={{ display: 'block', mt: 1 }}>{user.spotifyLink}</Link>)}
+            </Box>
+          </Box>
+        </Paper>
+
         <Grid container spacing={3} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard title="Gigs" value="—" subtitle="This month" />
@@ -99,26 +108,20 @@ const MusicianDashboard = () => {
             {message}
           </Alert>
         )}
-        <Paper elevation={3} sx={{ p: 4 }}>
-        <Box display="flex" alignItems="center" mb={3}>
-          <Avatar sx={{ width: 64, height: 64, mr: 2, bgcolor: 'secondary.main' }}>
-            {user.name?.charAt(0)?.toUpperCase()}
-          </Avatar>
-          <Box>
-            <Typography variant="h4" component="h1">
-              Welcome, {user.name}!
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Musician Dashboard
-            </Typography>
-          </Box>
-        </Box>
-
         <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Paper elevation={1} sx={{ p: 3, mb: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary">Recent Activity</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                <Typography variant="h6">Plays & Engagement</Typography>
+                <Sparkline values={[5,7,6,10,9,12,15,11,13,16,14]} />
+              </Box>
+            </Paper>
+          </Grid>
           <Grid item xs={12} md={6}>
             <Paper elevation={1} sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Personal Information
+                About
               </Typography>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -154,8 +157,28 @@ const MusicianDashboard = () => {
           <Grid item xs={12} md={6}>
             <Paper elevation={1} sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Musician Profile
+                Gallery
               </Typography>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {user.photo && (
+                  <Box component="img"
+                    src={`http://localhost:4000${user.photoBgRemoved || user.photo}`}
+                    alt="Primary"
+                    sx={{ width: 180, height: 120, objectFit: 'cover', borderRadius: 1 }}
+                  />
+                )}
+                {user.additionalPhoto && (
+                  <Box component="img"
+                    src={`http://localhost:4000${user.additionalPhotoBgRemoved || user.additionalPhoto}`}
+                    alt="Additional"
+                    sx={{ width: 180, height: 120, objectFit: 'cover', borderRadius: 1 }}
+                  />
+                )}
+                {/* Placeholder tiles to encourage uploading more */}
+                <Box sx={{ width: 180, height: 120, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
+                  <PhotoLibraryIcon color="action" />
+                </Box>
+              </Box>
               {user.spotifyLink && (
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
@@ -166,29 +189,27 @@ const MusicianDashboard = () => {
                   </Link>
                 </Box>
               )}
-              {(user.photo || user.additionalPhoto) && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Photos
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {user.photo && (
-                      <Box component="img"
-                        src={`http://localhost:4000${user.photoBgRemoved || user.photo}`}
-                        alt="Primary"
-                        sx={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 1 }}
-                      />
-                    )}
-                    {user.additionalPhoto && (
-                      <Box component="img"
-                        src={`http://localhost:4000${user.additionalPhotoBgRemoved || user.additionalPhoto}`}
-                        alt="Additional"
-                        sx={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 1 }}
-                      />
-                    )}
-                  </Box>
+            </Paper>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Paper elevation={1} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>Contact & Booking</Typography>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">Contact</Typography>
+                <Typography variant="body1">{user.phone || 'Not provided'}</Typography>
+              </Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">Booking Link</Typography>
+                <Button startIcon={<CalendarTodayIcon />} size="small" variant="contained" onClick={() => navigate('/me')}>Open Calendar</Button>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Quick Actions</Typography>
+                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  <Button variant="outlined" size="small" onClick={() => navigate('/me')}>Edit Profile</Button>
+                  <Button variant="contained" size="small" onClick={() => navigate('/me')}>Promote Gig</Button>
                 </Box>
-              )}
+              </Box>
             </Paper>
           </Grid>
 
@@ -227,30 +248,13 @@ const MusicianDashboard = () => {
                 >
                   View Full Profile
                 </Button>
+                {/* Background removal feature removed - replaced with View Full Profile / Manage actions */}
                 <Button 
                   variant="contained" 
                   color="secondary"
-                  onClick={handleReprocessPhotos} 
-                  disabled={reprocessing || !user?.additionalPhoto}
-                  sx={{ 
-                    background: 'linear-gradient(45deg, #9C27B0 30%, #E91E63 90%)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #7B1FA2 30%, #C2185B 90%)',
-                    },
-                    '&:disabled': {
-                      background: 'rgba(0, 0, 0, 0.12)',
-                      color: 'rgba(0, 0, 0, 0.26)'
-                    }
-                  }}
+                  onClick={() => navigate('/me')}
                 >
-                  {reprocessing ? 'Processing...' : 'Remove Background'}
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  color="secondary"
-                  onClick={handleReprocessBoth}
-                >
-                  Process All Photos
+                  View Full Profile
                 </Button>
                 <Button 
                   variant="outlined" 
@@ -296,7 +300,6 @@ const MusicianDashboard = () => {
             </Paper>
           </Grid>
         </Grid>
-        </Paper>
       </Container>
     </DashboardLayout>
   );
