@@ -10,8 +10,138 @@ import Box from '@mui/material/Box'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import Typography from '@mui/material/Typography'
 import Container from '@mui/material/Container'
+import { styled, keyframes } from '@mui/material/styles'
 import { register } from '../api/auth'
 import { useNavigate, Link as RouterLink } from 'react-router-dom'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+
+// AI-themed animations
+const gradientShift = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`
+
+const float = keyframes`
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+`
+
+// AI-themed SignUp styled components
+const BackgroundContainer = styled(Box)(() => ({
+  minHeight: '100vh',
+  background: 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
+  backgroundSize: '400% 400%',
+  animation: `${gradientShift} 8s ease infinite`,
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '20px 0',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+    backdropFilter: 'blur(10px)',
+  }
+}))
+
+const GlassPaper = styled(Box)(() => ({
+  background: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(20px)',
+  borderRadius: '20px',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  padding: '40px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+  position: 'relative',
+  zIndex: 1,
+  maxWidth: '500px',
+  width: '100%',
+}))
+
+const FloatingIcon = styled(Avatar)(() => ({
+  animation: `${float} 3s ease-in-out infinite`,
+  width: '60px',
+  height: '60px',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
+  border: '2px solid rgba(255,255,255,0.3)',
+  backdropFilter: 'blur(10px)',
+  margin: '0 auto 20px',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'scale(1.1)',
+    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+  }
+}))
+
+const AITextField = styled(TextField)(() => ({
+  '& .MuiOutlinedInput-root': {
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    color: '#fff',
+    '& fieldset': {
+      border: 'none',
+    },
+    '&:hover': {
+      background: 'rgba(255, 255, 255, 0.15)',
+    },
+    '&.Mui-focused': {
+      background: 'rgba(255, 255, 255, 0.15)',
+      boxShadow: '0 0 20px rgba(102, 126, 234, 0.4)',
+      '& fieldset': {
+        border: '2px solid rgba(102, 126, 234, 0.6)',
+      },
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: 'rgba(255, 255, 255, 0.7)',
+    '&.Mui-focused': {
+      color: '#fff',
+    },
+  },
+  '& .MuiOutlinedInput-input': {
+    color: '#fff',
+  },
+}))
+
+const AIButton = styled(Button)(() => ({
+  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  color: '#fff',
+  borderRadius: '12px',
+  padding: '12px 0',
+  fontSize: '16px',
+  fontWeight: 600,
+  textTransform: 'none',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  backdropFilter: 'blur(10px)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
+  },
+  '&:disabled': {
+    background: 'rgba(255, 255, 255, 0.1)',
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+}))
+
+const GradientText = styled(Typography)(() => ({
+  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+  fontWeight: 700,
+  textAlign: 'center',
+  marginBottom: '30px',
+  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+}))
 
 export default function SignUp() {
   const navigate = useNavigate()

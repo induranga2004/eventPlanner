@@ -1,12 +1,146 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Link, Alert, IconButton } from '@mui/material';
+import { styled, keyframes } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import AudiotrackIcon from '@mui/icons-material/Audiotrack';
+import AlbumIcon from '@mui/icons-material/Album';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
 import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+
+// AI-themed animations
+const float = keyframes`
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+`
+
+const gradientShift = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`
+
+const musicPulse = keyframes`
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+  25% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+  50% { transform: scale(1.05) rotate(-3deg); opacity: 0.9; }
+  75% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+`
+
+// AI-themed styled components for musician
+const MusicianProfileCard = styled(Paper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  borderRadius: '20px',
+  overflow: 'hidden',
+  position: 'relative',
+  animation: `${float} 6s ease-in-out infinite`,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(-45deg, rgba(168, 237, 234, 0.3) 0%, rgba(254, 214, 227, 0.3) 25%, rgba(210, 153, 194, 0.3) 50%, rgba(254, 249, 215, 0.3) 75%, rgba(168, 230, 207, 0.3) 100%)',
+    backgroundSize: '400% 400%',
+    animation: `${gradientShift} 12s ease infinite`,
+    zIndex: -1,
+  }
+}))
+
+const GlassCard = styled(Paper)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  borderRadius: '16px',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    background: 'rgba(255, 255, 255, 0.15)',
+    transform: 'translateY(-5px)',
+    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+  }
+}))
+
+const FloatingMusicIcon = styled(Box)(({ theme }) => ({
+  animation: `${musicPulse} 4s ease-in-out infinite`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
+  borderRadius: '12px',
+  border: '1px solid rgba(255,255,255,0.3)',
+  backdropFilter: 'blur(10px)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'scale(1.1) rotate(10deg)',
+    boxShadow: '0 15px 30px rgba(168, 237, 234, 0.4)',
+  }
+}))
+
+const AIButton = styled(Button)(({ theme }) => ({
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
+  color: '#fff',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+  borderRadius: '12px',
+  backdropFilter: 'blur(10px)',
+  fontWeight: 600,
+  textTransform: 'none',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.2) 100%)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+  },
+  '&.MuiButton-contained': {
+    background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    color: '#333',
+    '&:hover': {
+      background: 'linear-gradient(135deg, #fed6e3 0%, #a8edea 100%)',
+    }
+  }
+}))
+
+const GradientText = styled(Typography)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+  fontWeight: 700,
+  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+}))
+
+const PhotoGallery = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: '16px',
+  flexWrap: 'wrap',
+  '& img': {
+    borderRadius: '12px',
+    border: '2px solid rgba(255,255,255,0.3)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      transform: 'scale(1.05) rotate(2deg)',
+      boxShadow: '0 15px 30px rgba(0,0,0,0.3)',
+    }
+  }
+}))
+
+const InfoBox = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  padding: '12px 0',
+  borderBottom: '1px solid rgba(255,255,255,0.1)',
+  '&:last-child': {
+    borderBottom: 'none',
+  }
+}))
 
 // Small inline sparkline to visualize recent activity
 const Sparkline = ({ values = [], color = '#1976d2', width = 100, height = 28 }) => {
@@ -67,29 +201,75 @@ const MusicianDashboard = () => {
   return (
     <DashboardLayout title="Musician Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="musician"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Profile header with banner */}
-        <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden' }}>
-          <Box sx={{ height: 160, background: 'linear-gradient(90deg,#6a11cb,#2575fc)', position: 'relative' }} />
-          <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, mt: -8 }}>
-            <Avatar sx={{ width: 96, height: 96, border: '4px solid white', bgcolor: 'secondary.main' }}>
+        {/* AI-enhanced profile header */}
+        <MusicianProfileCard elevation={0} sx={{ mb: 4, overflow: 'hidden' }}>
+          {/* Gradient banner */}
+          <Box sx={{ 
+            height: 140, 
+            background: 'linear-gradient(-45deg, rgba(168, 237, 234, 0.8) 0%, rgba(254, 214, 227, 0.8) 25%, rgba(210, 153, 194, 0.8) 50%, rgba(254, 249, 215, 0.8) 75%, rgba(168, 230, 207, 0.8) 100%)',
+            backgroundSize: '400% 400%',
+            animation: `${gradientShift} 10s ease infinite`,
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <FloatingMusicIcon sx={{ width: 60, height: 60 }}>
+              <MusicNoteIcon sx={{ fontSize: 32, color: '#fff' }} />
+            </FloatingMusicIcon>
+          </Box>
+          
+          <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3, mt: -4 }}>
+            <Avatar 
+              sx={{ 
+                width: 100, 
+                height: 100, 
+                border: '4px solid rgba(255,255,255,0.3)', 
+                bgcolor: 'transparent',
+                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                animation: `${float} 5s ease-in-out infinite`,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              }}
+            >
               {user.name?.charAt(0)?.toUpperCase()}
             </Avatar>
+            
             <Box sx={{ flex: 1 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="h5">{user.name}</Typography>
-                  <Typography variant="body2" color="text.secondary">{user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}</Typography>
+                  <GradientText variant="h4">{user.name}</GradientText>
+                  <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mt: 1 }}>
+                    🎵 {user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}
+                  </Typography>
+                  {user.spotifyLink && (
+                    <Link 
+                      href={user.spotifyLink} 
+                      target="_blank" 
+                      rel="noopener" 
+                      sx={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mt: 2,
+                        color: '#fff',
+                        textDecoration: 'none',
+                        '&:hover': { textDecoration: 'underline' }
+                      }}
+                    >
+                      <AudiotrackIcon /> Spotify Profile
+                    </Link>
+                  )}
                 </Box>
-                <Box>
-                  <IconButton color="primary" onClick={() => navigate('/me')}><EditIcon /></IconButton>
-                </Box>
+                <AIButton onClick={() => navigate('/me')}>
+                  <EditIcon sx={{ mr: 1 }} />
+                  Edit Profile
+                </AIButton>
               </Box>
-              {user.spotifyLink && (<Link href={user.spotifyLink} target="_blank" rel="noopener" sx={{ display: 'block', mt: 1 }}>{user.spotifyLink}</Link>)}
             </Box>
           </Box>
-        </Paper>
+        </MusicianProfileCard>
 
-        <Grid container spacing={3} sx={{ mb: 2 }}>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard title="Gigs" value="—" subtitle="This month" />
           </Grid>
@@ -103,201 +283,282 @@ const MusicianDashboard = () => {
             <StatCard title="Member Since" value={new Date(user.createdAt).toLocaleDateString()} />
           </Grid>
         </Grid>
+        
         {message && (
-          <Alert severity={message.includes('success') ? 'success' : 'error'} sx={{ mb: 2 }}>
+          <Alert severity={message.includes('success') ? 'success' : 'error'} sx={{ mb: 3 }}>
             {message}
           </Alert>
         )}
+        
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            <Paper elevation={1} sx={{ p: 3, mb: 2 }}>
-              <Typography variant="subtitle2" color="text.secondary">Recent Activity</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-                <Typography variant="h6">Plays & Engagement</Typography>
+            <GlassCard elevation={0} sx={{ p: 3, mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
+                  <QueueMusicIcon sx={{ color: '#fff' }} />
+                </FloatingMusicIcon>
+                <GradientText variant="h6">Recent Activity</GradientText>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                  Plays & Engagement
+                </Typography>
                 <Sparkline values={[5,7,6,10,9,12,15,11,13,16,14]} />
               </Box>
-            </Paper>
+            </GlassCard>
           </Grid>
+          
           <Grid item xs={12} md={6}>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                About
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1">{user.email}</Typography>
+            <GlassCard elevation={0} sx={{ p: 3, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
+                  <MusicNoteIcon sx={{ color: '#fff' }} />
+                </FloatingMusicIcon>
+                <GradientText variant="h6">About</GradientText>
               </Box>
-              {user.phone && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Phone
-                  </Typography>
-                  <Typography variant="body1">{user.phone}</Typography>
+              
+              <InfoBox>
+                <MusicNoteIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Email</Typography>
+                  <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.email}</Typography>
                 </Box>
+              </InfoBox>
+
+              {user.phone && (
+                <InfoBox>
+                  <AudiotrackIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Phone</Typography>
+                    <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.phone}</Typography>
+                  </Box>
+                </InfoBox>
               )}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Role
-                </Typography>
-                <Chip label={user.role} color="secondary" size="small" />
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Member Since
-                </Typography>
-                <Typography variant="body1">
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </Typography>
-              </Box>
-            </Paper>
+
+              <InfoBox>
+                <AlbumIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Role</Typography>
+                  <Chip 
+                    label={user.role} 
+                    sx={{ 
+                      background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                      color: '#333',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255,255,255,0.3)',
+                    }} 
+                    size="small" 
+                  />
+                </Box>
+              </InfoBox>
+
+              <InfoBox>
+                <CalendarTodayIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Member Since</Typography>
+                  <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </Typography>
+                </Box>
+              </InfoBox>
+            </GlassCard>
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Gallery
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <GlassCard elevation={0} sx={{ p: 3, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
+                  <PhotoLibraryIcon sx={{ color: '#fff' }} />
+                </FloatingMusicIcon>
+                <GradientText variant="h6">Gallery</GradientText>
+              </Box>
+              
+              <PhotoGallery>
                 {user.photo && (
                   <Box component="img"
                     src={`http://localhost:4000${user.photoBgRemoved || user.photo}`}
                     alt="Primary"
-                    sx={{ width: 180, height: 120, objectFit: 'cover', borderRadius: 1 }}
+                    sx={{ width: 160, height: 100, objectFit: 'cover' }}
                   />
                 )}
                 {user.additionalPhoto && (
                   <Box component="img"
                     src={`http://localhost:4000${user.additionalPhotoBgRemoved || user.additionalPhoto}`}
                     alt="Additional"
-                    sx={{ width: 180, height: 120, objectFit: 'cover', borderRadius: 1 }}
+                    sx={{ width: 160, height: 100, objectFit: 'cover' }}
                   />
                 )}
-                {/* Placeholder tiles to encourage uploading more */}
-                <Box sx={{ width: 180, height: 120, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
-                  <PhotoLibraryIcon color="action" />
+                <Box sx={{ 
+                  width: 160, 
+                  height: 100, 
+                  background: 'rgba(255,255,255,0.1)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  borderRadius: '12px',
+                  border: '2px dashed rgba(255,255,255,0.3)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    background: 'rgba(255,255,255,0.2)',
+                    borderColor: 'rgba(255,255,255,0.5)',
+                  }
+                }}>
+                  <PhotoLibraryIcon sx={{ color: 'rgba(255,255,255,0.6)' }} />
                 </Box>
-              </Box>
+              </PhotoGallery>
+              
               {user.spotifyLink && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Spotify Profile
-                  </Typography>
-                  <Link href={user.spotifyLink} target="_blank" rel="noopener">
-                    {user.spotifyLink}
-                  </Link>
+                <Box sx={{ mt: 3 }}>
+                  <InfoBox>
+                    <AudiotrackIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                    <Box>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                        Spotify Profile
+                      </Typography>
+                      <Link href={user.spotifyLink} target="_blank" rel="noopener" sx={{ color: '#fff' }}>
+                        {user.spotifyLink}
+                      </Link>
+                    </Box>
+                  </InfoBox>
                 </Box>
               )}
-            </Paper>
+            </GlassCard>
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>Contact & Booking</Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Contact</Typography>
-                <Typography variant="body1">{user.phone || 'Not provided'}</Typography>
+            <GlassCard elevation={0} sx={{ p: 3, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
+                  <CalendarTodayIcon sx={{ color: '#fff' }} />
+                </FloatingMusicIcon>
+                <GradientText variant="h6">Contact & Booking</GradientText>
               </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Booking Link</Typography>
-                <Button startIcon={<CalendarTodayIcon />} size="small" variant="contained" onClick={() => navigate('/me')}>Open Calendar</Button>
+              
+              <InfoBox>
+                <MusicNoteIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <Box>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Contact</Typography>
+                  <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>
+                    {user.phone || 'Not provided'}
+                  </Typography>
+                </Box>
+              </InfoBox>
+              
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>Booking Link</Typography>
+                <AIButton 
+                  fullWidth
+                  variant="contained"
+                  onClick={() => navigate('/me')}
+                  sx={{ mb: 2 }}
+                >
+                  <CalendarTodayIcon sx={{ mr: 1 }} />
+                  Open Calendar
+                </AIButton>
               </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">Quick Actions</Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                  <Button variant="outlined" size="small" onClick={() => navigate('/me')}>Edit Profile</Button>
-                  <Button variant="contained" size="small" onClick={() => navigate('/me')}>Promote Gig</Button>
+              
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>Quick Actions</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <AIButton variant="outlined" onClick={() => navigate('/me')}>
+                    <EditIcon sx={{ mr: 1 }} />
+                    Edit Profile
+                  </AIButton>
+                  <AIButton variant="contained" onClick={() => navigate('/me')}>
+                    <AudiotrackIcon sx={{ mr: 1 }} />
+                    Promote Gig
+                  </AIButton>
                 </Box>
               </Box>
-            </Paper>
+            </GlassCard>
           </Grid>
 
           <Grid item xs={12}>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Quick Actions
-              </Typography>
+            <GlassCard elevation={0} sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
+                  <QueueMusicIcon sx={{ color: '#fff' }} />
+                </FloatingMusicIcon>
+                <GradientText variant="h6">Quick Actions</GradientText>
+              </Box>
+              
               <Box sx={{ 
                 display: 'grid', 
                 gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                gap: 2,
-                '& .MuiButton-root': {
-                  minHeight: 48,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  fontSize: '0.875rem',
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': {
-                    transform: 'translateY(-1px)',
-                    boxShadow: 4,
-                  }
-                }
+                gap: 3,
               }}>
-                <Button 
+                <AIButton 
                   variant="contained" 
-                  color="primary"
+                  size="large"
                   onClick={() => navigate('/me')}
                   sx={{ 
-                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #1976D2 30%, #1CB5E0 90%)',
-                    }
+                    minHeight: 60,
+                    flexDirection: 'column',
+                    gap: 1,
                   }}
                 >
+                  <MusicNoteIcon />
                   View Full Profile
-                </Button>
-                {/* Background removal feature removed - replaced with View Full Profile / Manage actions */}
-                <Button 
-                  variant="contained" 
-                  color="secondary"
+                </AIButton>
+                
+                <AIButton 
+                  variant="contained"
+                  size="large"
                   onClick={() => navigate('/me')}
+                  sx={{ 
+                    minHeight: 60,
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
                 >
-                  View Full Profile
-                </Button>
-                <Button 
+                  <AudiotrackIcon />
+                  Manage Portfolio
+                </AIButton>
+                
+                <AIButton 
                   variant="outlined" 
-                  color="primary"
+                  size="large"
                   sx={{ 
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderWidth: 2,
-                      backgroundColor: 'primary.50'
-                    }
+                    minHeight: 60,
+                    flexDirection: 'column',
+                    gap: 1,
                   }}
                 >
+                  <AlbumIcon />
                   Manage Gigs
-                </Button>
-                <Button 
+                </AIButton>
+                
+                <AIButton 
                   variant="outlined" 
-                  color="secondary"
+                  size="large"
                   sx={{ 
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderWidth: 2,
-                      backgroundColor: 'secondary.50'
-                    }
+                    minHeight: 60,
+                    flexDirection: 'column',
+                    gap: 1,
                   }}
                 >
+                  <PhotoLibraryIcon />
                   Update Portfolio
-                </Button>
-                <Button 
+                </AIButton>
+                
+                <AIButton 
                   variant="outlined" 
-                  color="error"
+                  size="large"
                   onClick={handleLogout}
                   sx={{ 
-                    borderWidth: 2,
+                    minHeight: 60,
+                    flexDirection: 'column',
+                    gap: 1,
                     '&:hover': {
-                      borderWidth: 2,
-                      backgroundColor: 'error.50'
+                      background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.2) 100%)',
                     }
                   }}
                 >
+                  <EditIcon />
                   Logout
-                </Button>
+                </AIButton>
               </Box>
-            </Paper>
+            </GlassCard>
           </Grid>
         </Grid>
       </Container>

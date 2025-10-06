@@ -1,7 +1,96 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Container, CssBaseline, Box, Typography, TextField, Button } from '@mui/material';
+import { styled, keyframes } from '@mui/material/styles';
+import { Lightbulb as LightIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { register } from '../api/auth';
+
+// AI-themed styled components for Lighting Services
+const gradientShift = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
+const float = keyframes`
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-20px) rotate(5deg); }
+  66% { transform: translateY(-10px) rotate(-5deg); }
+`;
+
+const BackgroundContainer = styled(Box)(({ theme }) => ({
+  minHeight: '100vh',
+  background: 'linear-gradient(-45deg, #ff9800, #f57c00, #ffb74d, #ff9800)',
+  backgroundSize: '400% 400%',
+  animation: `${gradientShift} 15s ease infinite`,
+  position: 'relative',
+  overflow: 'hidden',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: theme.spacing(2),
+}));
+
+const FloatingIcon = styled(Box)(({ size = '60px', top, bottom, left, right, duration = '6s' }) => ({
+  position: 'absolute',
+  top,
+  bottom,
+  left,
+  right,
+  fontSize: size,
+  animation: `${float} ${duration} ease-in-out infinite`,
+  opacity: 0.4,
+  pointerEvents: 'none',
+  color: 'rgba(255, 255, 255, 0.6)',
+}));
+
+const GlassPaper = styled(Box)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(20px)',
+  borderRadius: '24px',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+  padding: theme.spacing(4),
+  maxWidth: '500px',
+  width: '100%',
+  position: 'relative',
+}));
+
+const AITextField = styled(TextField)(({ theme }) => ({
+  '& .MuiOutlinedInput-root': {
+    background: 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '12px',
+    '&:hover': {
+      background: 'rgba(255, 255, 255, 0.95)',
+    },
+    '&.Mui-focused': {
+      background: 'rgba(255, 255, 255, 1)',
+      boxShadow: '0 0 20px rgba(255, 152, 0, 0.3)',
+    }
+  },
+  '& .MuiInputLabel-root': {
+    fontWeight: 600,
+  }
+}));
+
+const AIButton = styled(Button)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+  borderRadius: '12px',
+  padding: theme.spacing(1.5, 3),
+  fontWeight: 700,
+  fontSize: '1rem',
+  textTransform: 'none',
+  boxShadow: '0 8px 25px rgba(255, 152, 0, 0.3)',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 12px 30px rgba(255, 152, 0, 0.4)',
+  },
+  '&:disabled': {
+    background: 'rgba(255, 152, 0, 0.5)',
+  }
+}));
 
 export default function LightsRegistration() {
   const navigate = useNavigate();
