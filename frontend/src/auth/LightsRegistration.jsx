@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, CssBaseline, Box, Typography, TextField, Button } from '@mui/material';
+import { Container, CssBaseline, Box, Typography, TextField, Button, Alert } from '@mui/material';
 import { styled, keyframes } from '@mui/material/styles';
 import { Lightbulb as LightIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { register } from '../api/auth';
@@ -119,51 +119,110 @@ export default function LightsRegistration() {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <CssBaseline />
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
+    <BackgroundContainer>
+      {/* Floating light icons */}
+      <FloatingIcon sx={{ position: 'absolute', top: '15%', left: '10%' }}>
+        <LightIcon sx={{ fontSize: '60px', color: 'rgba(255,255,255,0.3)' }} />
+      </FloatingIcon>
+      <FloatingIcon sx={{ position: 'absolute', top: '25%', right: '15%' }}>
+        <LightIcon sx={{ fontSize: '45px', color: 'rgba(255,255,255,0.2)' }} />
+      </FloatingIcon>
+      <FloatingIcon sx={{ position: 'absolute', bottom: '20%', left: '20%' }}>
+        <LightIcon sx={{ fontSize: '55px', color: 'rgba(255,255,255,0.25)' }} />
+      </FloatingIcon>
+      
+      <GlassPaper>
+        <FloatingIcon sx={{ width: '80px', height: '80px', margin: '0 auto 20px' }}>
+          <LightIcon sx={{ fontSize: '32px', color: '#fff' }} />
+        </FloatingIcon>
+        
+        <Typography variant="h4" sx={{ 
+          background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          fontWeight: 700,
+          textAlign: 'center',
+          marginBottom: '30px',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+        }}>
           Lighting Services Registration
         </Typography>
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-          <TextField margin="normal" required fullWidth id="companyName" label="Company/Service Name" name="companyName" autoFocus />
-          <TextField margin="normal" required fullWidth id="email" label="Email Address" name="email" autoComplete="email" />
-          <TextField margin="normal" fullWidth id="phone" label="Phone Number" name="phone" />
-          <TextField margin="normal" required fullWidth name="password" label="Password" type="password" id="password" autoComplete="new-password" />
-          <TextField margin="normal" fullWidth id="contactPerson" label="Contact Person" name="contactPerson" />
-          <TextField margin="normal" fullWidth id="address" label="Business Address" name="address" />
-          <TextField margin="normal" fullWidth id="lightTypes" label="Lighting Equipment Types" name="lightTypes" placeholder="LED, Stage lights, Ambient lighting, etc." multiline rows={2} />
-          <TextField margin="normal" fullWidth id="eventTypes" label="Event Types" name="eventTypes" placeholder="Weddings, Concerts, Corporate events, etc." multiline rows={2} />
-          <TextField margin="normal" fullWidth id="crewSize" label="Crew Size" name="crewSize" type="number" />
-          <TextField margin="normal" fullWidth id="services" label="Services Offered" name="services" placeholder="Setup, Operation, Design consultation, etc." multiline rows={2} />
-          <TextField margin="normal" fullWidth id="website" label="Website" name="website" placeholder="https://yourwebsite.com" />
-          <Typography variant="body2" sx={{ mt: 2 }}>
+
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              background: 'rgba(244, 67, 54, 0.2)',
+              border: '1px solid rgba(244, 67, 54, 0.3)',
+              color: 'white',
+              '& .MuiAlert-icon': {
+                color: '#ff6b6b'
+              }
+            }}
+          >
+            {error}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <AITextField margin="normal" required fullWidth id="companyName" label="Company/Service Name" name="companyName" autoFocus />
+          <AITextField margin="normal" required fullWidth id="email" label="Email Address" name="email" autoComplete="email" />
+          <AITextField margin="normal" fullWidth id="phone" label="Phone Number" name="phone" />
+          <AITextField margin="normal" required fullWidth name="password" label="Password" type="password" id="password" autoComplete="new-password" />
+          <AITextField margin="normal" fullWidth id="contactPerson" label="Contact Person" name="contactPerson" />
+          <AITextField margin="normal" fullWidth id="address" label="Business Address" name="address" />
+          <AITextField margin="normal" fullWidth id="lightTypes" label="Lighting Equipment Types" name="lightTypes" placeholder="LED, Stage lights, Ambient lighting, etc." multiline rows={2} />
+          <AITextField margin="normal" fullWidth id="eventTypes" label="Event Types" name="eventTypes" placeholder="Weddings, Concerts, Corporate events, etc." multiline rows={2} />
+          <AITextField margin="normal" fullWidth id="crewSize" label="Crew Size" name="crewSize" type="number" />
+          <AITextField margin="normal" fullWidth id="services" label="Services Offered" name="services" placeholder="Setup, Operation, Design consultation, etc." multiline rows={2} />
+          <AITextField margin="normal" fullWidth id="website" label="Website" name="website" placeholder="https://yourwebsite.com" />
+          
+          <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
             Upload Service Photo:
           </Typography>
-          <input type="file" name="photo" accept="image/*" style={{ marginBottom: '16px' }} />
-          <Typography variant="body2" sx={{ mt: 2 }}>
+          <Box sx={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '12px',
+            border: '2px dashed rgba(255, 255, 255, 0.3)',
+            padding: '20px',
+            textAlign: 'center',
+            margin: '10px 0',
+            '& input[type="file"]': {
+              color: '#fff',
+              width: '100%',
+            }
+          }}>
+            <input type="file" name="photo" accept="image/*" />
+          </Box>
+          <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
             Upload Additional Photo:
           </Typography>
-          <input type="file" name="additionalPhoto" accept="image/*" style={{ marginBottom: '16px' }} />
-          <TextField margin="normal" fullWidth id="instagramLink" label="Instagram Link" name="instagramLink" />
-          <TextField margin="normal" fullWidth id="facebookLink" label="Facebook Link" name="facebookLink" />
-          {error && (
-            <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-              {error}
-            </Typography>
-          )}
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={loading}>
+          <Box sx={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '12px',
+            border: '2px dashed rgba(255, 255, 255, 0.3)',
+            padding: '20px',
+            textAlign: 'center',
+            margin: '10px 0',
+            '& input[type="file"]': {
+              color: '#fff',
+              width: '100%',
+            }
+          }}>
+            <input type="file" name="additionalPhoto" accept="image/*" />
+          </Box>
+          <AITextField margin="normal" fullWidth id="instagramLink" label="Instagram Link" name="instagramLink" />
+          <AITextField margin="normal" fullWidth id="facebookLink" label="Facebook Link" name="facebookLink" />
+          
+          <AIButton type="submit" fullWidth sx={{ mt: 3, mb: 2 }} disabled={loading}>
             {loading ? 'Registering…' : 'Register Service'}
-          </Button>
+          </AIButton>
         </Box>
-      </Box>
-    </Container>
+      </GlassPaper>
+    </BackgroundContainer>
   );
 }

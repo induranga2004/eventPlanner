@@ -19,8 +19,22 @@ export async function me() {
     const { data } = await api.get('/me')
     return data
   } catch (err) {
-    // Dev fallback: return mock user data so dashboards render without a DB
+    console.error('Failed to fetch user data from /me endpoint:', err);
+    
+    // In dev mode, check if there's stored user data from login before using fallback
     if (import.meta.env.DEV) {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          return { user: userData };
+        } catch (parseError) {
+          console.error('Failed to parse stored user data:', parseError);
+        }
+      }
+      
+      // Only use fallback if no stored user data is available
+      console.warn('Using dev fallback user data - this should not happen in production');
       return {
         user: {
           _id: 'dev-user-1',
@@ -52,5 +66,36 @@ export async function reprocessAllPhotos() {
   // Background removal disabled on server; return fresh user data instead
   const { data } = await api.get('/me');
   return { user: data.user, message: 'Background removal feature disabled' };
+}
+
+// Two-Factor Authentication API methods
+export async function setup2FA() {
+  const { data } = await api.post('/2fa/setup');
+  return data;
+}
+
+export async function enable2FA(token) {
+  const { data } = await api.post('/2fa/enable', { token });
+  return data;
+}
+
+export async function verify2FA({ email, token, isBackupCode = false }) {
+  const { data } = await api.post('/2fa/verify', { email, token, isBackupCode });
+  return data;
+}
+
+export async function disable2FA({ token, password }) {
+  const { data } = await api.post('/2fa/disable', { token, password });
+  return data;
+}
+
+export async function get2FAStatus() {
+  const { data } = await api.get('/2fa/status');
+  return data;
+}
+
+export async function generateNewBackupCodes(token) {
+  const { data } = await api.post('/2fa/backup-codes', { token });
+  return data;
 }
 

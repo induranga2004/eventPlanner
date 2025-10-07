@@ -125,10 +125,35 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
+        // Add detailed logging
+        console.log('=== UserDashboard: Starting data fetch ===');
+        console.log('Token exists:', !!localStorage.getItem('token'));
+        console.log('UserRole in localStorage:', localStorage.getItem('userRole'));
+        
+        // First, try to get user data from localStorage (set during login/2FA)
+        const storedUser = localStorage.getItem('user');
+        console.log('Stored user raw:', storedUser);
+        
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          console.log('UserDashboard: Using stored user data:', userData);
+          console.log('User has name?', !!userData.name);
+          console.log('User has photo?', !!userData.photo);
+          console.log('User has email?', !!userData.email);
+          setUser(userData);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to API call if no stored user data
+        console.log('UserDashboard: No stored data, fetching from API...');
         const data = await me();
+        console.log('UserDashboard: API response:', data);
+        console.log('UserDashboard: API user data:', data.user);
         setUser(data.user);
       } catch (error) {
         console.error('Failed to fetch user details:', error);
+        console.error('Error response:', error.response?.data);
         navigate('/login');
       } finally {
         setLoading(false);
@@ -143,11 +168,14 @@ const UserDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('user'); // Also remove stored user data
     navigate('/login');
   };
 
   if (loading) return <Container><Typography>Loading...</Typography></Container>;
   if (!user) return <Container><Typography>User not found</Typography></Container>;
+
+  console.log('UserDashboard: Rendering with user:', user);
 
   return (
   <DashboardLayout title="User Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="user"> 

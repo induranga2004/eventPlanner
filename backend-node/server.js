@@ -21,6 +21,7 @@ app.get('/api/health', (req, res) => {
 
 // routes
 app.use('/api/auth', require('./src/auth/auth.routes'));
+app.use('/api/2fa', require('./src/routes/twoFactor'));
 app.use('/api', require('./src/auth/protected.routes'));
 
 // 404 for other /api routes

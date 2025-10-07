@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, CssBaseline, Box, Typography, TextField, Button, FormControl, InputLabel, Select, MenuItem, Chip, OutlinedInput } from '@mui/material';
+import { Container, CssBaseline, Box, Typography, TextField, Button, FormControl, InputLabel, Select, MenuItem, Chip, OutlinedInput, Alert } from '@mui/material';
 import { styled, keyframes } from '@mui/material/styles';
 import { register } from '../api/auth';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
@@ -27,7 +27,7 @@ const soundWave = keyframes`
 // AI-themed styled components for sounds (blue theme)
 const BackgroundContainer = styled(Box)(() => ({
   minHeight: '100vh',
-  background: 'linear-gradient(-45deg, #4facfe 0%, #00f2fe 25%, #4facfe 50%, #00f2fe 75%, #4facfe 100%)',
+  background: 'linear-gradient(-45deg, #1e3c72 0%, #2a5298 25%, #1e3c72 50%, #2a5298 75%, #1e3c72 100%)',
   backgroundSize: '400% 400%',
   animation: `${gradientShift} 8s ease infinite`,
   position: 'relative',
@@ -103,14 +103,18 @@ const AITextField = styled(TextField)(() => ({
     },
   },
   '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: 600,
     '&.Mui-focused': {
-      color: '#fff',
-    },
+      color: '#4facfe',
+    }
   },
-  '& .MuiOutlinedInput-input': {
+  '& .MuiInputBase-input': {
     color: '#fff',
-  },
+    '&::placeholder': {
+      color: 'rgba(255, 255, 255, 0.6)',
+    }
+  }
 }))
 
 const AIFormControl = styled(FormControl)(() => ({
@@ -129,21 +133,19 @@ const AIFormControl = styled(FormControl)(() => ({
     '&.Mui-focused': {
       background: 'rgba(255, 255, 255, 0.15)',
       boxShadow: '0 0 20px rgba(79, 172, 254, 0.4)',
-    },
+    }
   },
   '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: 600,
     '&.Mui-focused': {
-      color: '#fff',
-    },
-  },
-  '& .MuiSelect-select': {
-    color: '#fff',
+      color: '#4facfe',
+    }
   },
   '& .MuiChip-root': {
-    background: 'rgba(255, 255, 255, 0.2)',
+    background: 'rgba(79, 172, 254, 0.2)',
     color: '#fff',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
+    border: '1px solid rgba(79, 172, 254, 0.3)',
   }
 }))
 
@@ -280,28 +282,50 @@ export default function SoundsRegistration() {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <CssBaseline />
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
+    <BackgroundContainer>
+      {/* Floating sound wave icons */}
+      <FloatingIcon sx={{ position: 'absolute', top: '15%', left: '10%' }}>
+        <VolumeUpIcon sx={{ fontSize: '60px', color: 'rgba(255,255,255,0.3)' }} />
+      </FloatingIcon>
+      <FloatingIcon sx={{ position: 'absolute', bottom: '20%', left: '20%' }}>
+        <VolumeUpIcon sx={{ fontSize: '55px', color: 'rgba(255,255,255,0.25)' }} />
+      </FloatingIcon>
+      
+      <GlassPaper>
+        <FloatingIcon>
+          <VolumeUpIcon sx={{ fontSize: '32px', color: '#fff' }} />
+        </FloatingIcon>
+        
+        <GradientText variant="h4">
           Sound Services Registration
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-          <TextField margin="normal" required fullWidth id="companyName" label="Company/Business Name" name="companyName" autoFocus />
-          <TextField margin="normal" required fullWidth id="email" label="Email Address" name="email" autoComplete="email" />
-          <TextField margin="normal" fullWidth id="phone" label="Contact Phone" name="phone" />
-          <TextField margin="normal" required fullWidth name="password" label="Password" type="password" id="password" autoComplete="new-password" />
-          <TextField margin="normal" fullWidth id="contactPerson" label="Contact Person Name" name="contactPerson" />
-          <TextField margin="normal" fullWidth id="address" label="Business Address" name="address" multiline rows={2} />
+        </GradientText>
+
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              background: 'rgba(244, 67, 54, 0.2)',
+              border: '1px solid rgba(244, 67, 54, 0.3)',
+              color: 'white',
+              '& .MuiAlert-icon': {
+                color: '#ff6b6b'
+              }
+            }}
+          >
+            {error}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <AITextField margin="normal" required fullWidth id="companyName" label="Company/Business Name" name="companyName" autoFocus />
+          <AITextField margin="normal" required fullWidth id="email" label="Email Address" name="email" autoComplete="email" />
+          <AITextField margin="normal" fullWidth id="phone" label="Contact Phone" name="phone" />
+          <AITextField margin="normal" required fullWidth name="password" label="Password" type="password" id="password" autoComplete="new-password" />
+          <AITextField margin="normal" fullWidth id="contactPerson" label="Contact Person Name" name="contactPerson" />
+          <AITextField margin="normal" fullWidth id="address" label="Business Address" name="address" multiline rows={2} />
           
-          <FormControl sx={{ mt: 2, width: '100%' }}>
+          <AIFormControl sx={{ mt: 2, width: '100%' }}>
             <InputLabel id="equipment-label">Sound Equipment Types</InputLabel>
             <Select
               labelId="equipment-label"
@@ -325,9 +349,9 @@ export default function SoundsRegistration() {
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </AIFormControl>
 
-          <FormControl sx={{ mt: 2, width: '100%' }}>
+          <AIFormControl sx={{ mt: 2, width: '100%' }}>
             <InputLabel id="event-types-label">Event Types You Serve</InputLabel>
             <Select
               labelId="event-types-label"
@@ -351,17 +375,17 @@ export default function SoundsRegistration() {
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </AIFormControl>
 
-          <FormControl sx={{ mt: 2, width: '100%' }}>
-            <InputLabel id="services-label">Services Offered</InputLabel>
+          <AIFormControl sx={{ mt: 2, width: '100%' }}>
+            <InputLabel id="services-label">Services You Provide</InputLabel>
             <Select
               labelId="services-label"
               id="services"
               multiple
               value={selectedServices}
               onChange={handleServicesChange}
-              input={<OutlinedInput label="Services Offered" />}
+              input={<OutlinedInput label="Services You Provide" />}
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {selected.map((value) => (
@@ -377,42 +401,28 @@ export default function SoundsRegistration() {
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </AIFormControl>
 
-          <TextField margin="normal" fullWidth id="experience" label="Years of Experience" name="experience" type="number" />
-          <TextField margin="normal" fullWidth id="crewSize" label="Crew Size Available" name="crewSize" type="number" />
-          <TextField margin="normal" fullWidth id="equipmentDetails" label="Equipment Inventory Details" name="equipmentDetails" multiline rows={3} placeholder="List your sound equipment and inventory with specifications" />
-          <TextField margin="normal" fullWidth id="bio" label="Company Bio" name="bio" multiline rows={3} placeholder="Tell us about your sound company" />
-          <TextField margin="normal" fullWidth id="website" label="Website URL" name="website" />
-          <TextField margin="normal" fullWidth id="instagramLink" label="Instagram Handle" name="instagramLink" />
-          <TextField margin="normal" fullWidth id="facebookLink" label="Facebook Page" name="facebookLink" />
+          <AITextField margin="normal" fullWidth id="experience" label="Years of Experience" name="experience" type="number" />
+          <AITextField margin="normal" fullWidth id="crewSize" label="Crew Size Available" name="crewSize" type="number" />
+          <AITextField margin="normal" fullWidth id="equipmentDetails" label="Equipment Inventory Details" name="equipmentDetails" multiline rows={3} placeholder="List your sound equipment and inventory with specifications" />
+          <AITextField margin="normal" fullWidth id="bio" label="Company Bio" name="bio" multiline rows={3} placeholder="Tell us about your sound company" />
+          <AITextField margin="normal" fullWidth id="website" label="Website URL" name="website" />
+          <AITextField margin="normal" fullWidth id="instagramLink" label="Instagram Handle" name="instagramLink" />
+          <AITextField margin="normal" fullWidth id="facebookLink" label="Facebook Page" name="facebookLink" />
           
-          <Typography variant="body2" sx={{ mt: 2 }}>
+          <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
             Upload Company Logo:
           </Typography>
-          <input type="file" name="logo" accept="image/*" style={{ marginBottom: '16px' }} />
+          <FileUploadBox>
+            <input type="file" name="logo" accept="image/*" />
+          </FileUploadBox>
           
-          <Typography variant="body2" sx={{ mt: 2 }}>
-            Upload Portfolio Photos:
-          </Typography>
-          <input type="file" name="photo" accept="image/*" style={{ marginBottom: '16px' }} />
-          
-          <Typography variant="body2" sx={{ mt: 2 }}>
-            Upload Additional Photos:
-          </Typography>
-          <input type="file" name="additionalPhoto" accept="image/*" style={{ marginBottom: '16px' }} />
-
-          {error && (
-            <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-              {error}
-            </Typography>
-          )}
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={loading}>
+          <AIButton type="submit" fullWidth sx={{ mt: 3, mb: 2 }} disabled={loading}>
             {loading ? 'Registering…' : 'Register Sound Service'}
-          </Button>
+          </AIButton>
         </Box>
-      </Box>
-    </Container>
+      </GlassPaper>
+    </BackgroundContainer>
   );
 }
-

@@ -129,7 +129,24 @@ export default function LightsDashboard() {
 
   useEffect(() => {
     (async () => {
-      try { const data = await me(); setUser(data.user); } catch { navigate('/login'); } finally { setLoading(false); }
+      try { 
+        // First, try to get user data from localStorage (set during login/2FA)
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setLoading(false);
+          return;
+        }
+        
+        // Fallback to API call if no stored user data
+        const data = await me(); 
+        setUser(data.user); 
+      } catch { 
+        navigate('/login'); 
+      } finally { 
+        setLoading(false); 
+      }
     })();
   }, [navigate]);
 

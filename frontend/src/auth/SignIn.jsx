@@ -18,6 +18,7 @@ import RocketLaunchIcon from '@mui/icons-material/RocketLaunch'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import SecurityIcon from '@mui/icons-material/Security'
+import TwoFactorVerificationSimple from '../components/TwoFactorVerificationSimple'
 
 // Animated gradient background
 const gradientShift = keyframes`
@@ -170,6 +171,9 @@ export default function SignIn() {
   const navigate = useNavigate()
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
+  const [show2FA, setShow2FA] = React.useState(false)
+  const [userEmail, setUserEmail] = React.useState('')
+  const [tempToken, setTempToken] = React.useState('')
 
   console.log('SignIn component rendered'); // Debugging: Log when the component is rendered
 
@@ -182,9 +186,21 @@ export default function SignIn() {
     setError('')
     try {
       const res = await login(email, password)
+      
+      // Check if 2FA is required
+      if (res.requires2FA) {
+        setUserEmail(email)
+        setTempToken(res.tempToken)
+        setShow2FA(true)
+        setLoading(false)
+        return
+      }
+      
+      // Normal login flow
       if (res.token) {
         localStorage.setItem('token', res.token)
         localStorage.setItem('userRole', res.role) // Store the user role
+        localStorage.setItem('user', JSON.stringify(res.user)) // Store user data
         console.log('User Role Stored:', res.role) // Debugging: Log the stored role
         navigate(`/${res.role}-dashboard`); // Dynamically navigate to the relevant dashboard
       }
@@ -193,6 +209,33 @@ export default function SignIn() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handle2FASuccess = (userData) => {
+    // Store user data and navigate to dashboard
+    localStorage.setItem('userRole', userData.user.role)
+    localStorage.setItem('user', JSON.stringify(userData.user))
+    console.log('2FA Success - User Role:', userData.user.role)
+    navigate(`/${userData.user.role}-dashboard`)
+  }
+
+  const handle2FABack = () => {
+    setShow2FA(false)
+    setUserEmail('')
+    setTempToken('')
+    setError('')
+  }
+
+  // If 2FA is required, show the verification component
+  if (show2FA) {
+    return (
+      <TwoFactorVerificationSimple
+        email={userEmail}
+        tempToken={tempToken}
+        onSuccess={handle2FASuccess}
+        onBack={handle2FABack}
+      />
+    )
   }
 
   return (

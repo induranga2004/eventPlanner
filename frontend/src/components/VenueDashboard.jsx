@@ -48,7 +48,7 @@ const VenueProfileCard = styled(Paper)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(-45deg, rgba(133, 255, 189, 0.3) 0%, rgba(255, 251, 125, 0.3) 25%, rgba(133, 255, 189, 0.3) 50%, rgba(255, 251, 125, 0.3) 75%, rgba(133, 255, 189, 0.3) 100%)',
+    background: 'linear-gradient(-45deg, rgba(22, 160, 133, 0.6) 0%, rgba(243, 156, 18, 0.6) 25%, rgba(39, 174, 96, 0.6) 50%, rgba(230, 126, 34, 0.6) 75%, rgba(46, 204, 113, 0.6) 100%)',
     backgroundSize: '400% 400%',
     animation: `${gradientShift} 10s ease infinite`,
     zIndex: -1,
@@ -99,10 +99,10 @@ const AIButton = styled(Button)(({ theme }) => ({
     boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
   },
   '&.MuiButton-contained': {
-    background: 'linear-gradient(135deg, #85FFBD 0%, #FFFB7D 100%)',
-    color: '#333',
+    background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
+    color: '#fff',
     '&:hover': {
-      background: 'linear-gradient(135deg, #FFFB7D 0%, #85FFBD 100%)',
+      background: 'linear-gradient(135deg, #219a52 0%, #27ae60 100%)',
     }
   }
 }))
@@ -153,6 +153,16 @@ const VenueDashboard = () => {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
+        // First, try to get user data from localStorage (set during login/2FA)
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to API call if no stored user data
         const data = await me();
         setUser(data.user);
       } catch (error) {
@@ -169,6 +179,7 @@ const VenueDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('user'); // Also remove stored user data
     navigate('/login');
   };
 

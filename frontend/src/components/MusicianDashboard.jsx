@@ -48,7 +48,7 @@ const MusicianProfileCard = styled(Paper)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(-45deg, rgba(168, 237, 234, 0.3) 0%, rgba(254, 214, 227, 0.3) 25%, rgba(210, 153, 194, 0.3) 50%, rgba(254, 249, 215, 0.3) 75%, rgba(168, 230, 207, 0.3) 100%)',
+    background: 'linear-gradient(-45deg, rgba(30, 60, 114, 0.6) 0%, rgba(42, 82, 152, 0.6) 25%, rgba(142, 68, 173, 0.6) 50%, rgba(192, 57, 43, 0.6) 75%, rgba(39, 174, 96, 0.6) 100%)',
     backgroundSize: '400% 400%',
     animation: `${gradientShift} 12s ease infinite`,
     zIndex: -1,
@@ -99,10 +99,10 @@ const AIButton = styled(Button)(({ theme }) => ({
     boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
   },
   '&.MuiButton-contained': {
-    background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    color: '#333',
+    background: 'linear-gradient(135deg, #3498db 0%, #9b59b6 100%)',
+    color: '#fff',
     '&:hover': {
-      background: 'linear-gradient(135deg, #fed6e3 0%, #a8edea 100%)',
+      background: 'linear-gradient(135deg, #2980b9 0%, #8e44ad 100%)',
     }
   }
 }))
@@ -169,6 +169,16 @@ const MusicianDashboard = () => {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
+        // First, try to get user data from localStorage (set during login/2FA)
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to API call if no stored user data
         const data = await me();
         setUser(data.user);
       } catch (error) {
@@ -185,6 +195,7 @@ const MusicianDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('user'); // Also remove stored user data
     navigate('/login');
   };
 
@@ -206,7 +217,7 @@ const MusicianDashboard = () => {
           {/* Gradient banner */}
           <Box sx={{ 
             height: 140, 
-            background: 'linear-gradient(-45deg, rgba(168, 237, 234, 0.8) 0%, rgba(254, 214, 227, 0.8) 25%, rgba(210, 153, 194, 0.8) 50%, rgba(254, 249, 215, 0.8) 75%, rgba(168, 230, 207, 0.8) 100%)',
+            background: 'linear-gradient(-45deg, rgba(30, 60, 114, 0.9) 0%, rgba(42, 82, 152, 0.9) 25%, rgba(142, 68, 173, 0.9) 50%, rgba(192, 57, 43, 0.9) 75%, rgba(39, 174, 96, 0.9) 100%)',
             backgroundSize: '400% 400%',
             animation: `${gradientShift} 10s ease infinite`,
             position: 'relative',
@@ -226,7 +237,7 @@ const MusicianDashboard = () => {
                 height: 100, 
                 border: '4px solid rgba(255,255,255,0.3)', 
                 bgcolor: 'transparent',
-                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                background: 'linear-gradient(135deg, #3498db 0%, #9b59b6 100%)',
                 animation: `${float} 5s ease-in-out infinite`,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
               }}
@@ -342,8 +353,8 @@ const MusicianDashboard = () => {
                   <Chip 
                     label={user.role} 
                     sx={{ 
-                      background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                      color: '#333',
+                      background: 'linear-gradient(135deg, #3498db 0%, #9b59b6 100%)',
+                      color: '#fff',
                       fontWeight: 600,
                       border: '1px solid rgba(255,255,255,0.3)',
                     }} 

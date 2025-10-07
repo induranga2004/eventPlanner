@@ -38,9 +38,9 @@ const pulse = keyframes`
 const AIBackgroundContainer = styled(Box)(({ theme, role }) => {
   const roleGradients = {
     'user': 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
-    'musician': 'linear-gradient(-45deg, #a8edea 0%, #fed6e3 25%, #d299c2 50%, #fef9d7 75%, #a8e6cf 100%)', 
-    'venue': 'linear-gradient(-45deg, #85FFBD 0%, #FFFB7D 25%, #85FFBD 50%, #FFFB7D 75%, #85FFBD 100%)',
-    'lights': 'linear-gradient(-45deg, #FF8E53 0%, #FF6B35 25%, #F7931E 50%, #FFD23F 75%, #FF8E53 100%)',
+    'musician': 'linear-gradient(-45deg, #1e3c72 0%, #2a5298 25%, #8e44ad 50%, #c0392b 75%, #27ae60 100%)', 
+    'venue': 'linear-gradient(-45deg, #16a085 0%, #f39c12 25%, #27ae60 50%, #e67e22 75%, #2ecc71 100%)',
+    'lights': 'linear-gradient(-45deg, #e74c3c 0%, #f39c12 25%, #e67e22 50%, #d35400 75%, #c0392b 100%)',
     'musicband': 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #667eea 75%, #764ba2 100%)',
     'sounds': 'linear-gradient(-45deg, #4facfe 0%, #00f2fe 25%, #4facfe 50%, #00f2fe 75%, #4facfe 100%)',
     'default': 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)'

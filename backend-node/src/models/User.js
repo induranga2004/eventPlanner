@@ -6,6 +6,15 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['user', 'musician', 'music_band', 'venue', 'lights', 'sounds'], required: true },
   name: { type: String, required: true },
   phone: { type: String },
+  
+  // Two-Factor Authentication fields
+  twoFactorSecret: { type: String }, // Encrypted TOTP secret
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorBackupCodes: [{ type: String }], // Hashed backup codes
+  lastTOTPUsed: { type: Date }, // Prevent replay attacks
+  lastTOTPToken: { type: String }, // Store last used token for replay prevention
+  twoFactorSetupDate: { type: Date },
+  
   // Additional fields for musicians
   photo: { type: String },
   spotifyLink: { type: String },

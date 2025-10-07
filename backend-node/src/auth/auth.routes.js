@@ -128,8 +128,144 @@ router.post('/login', async (req, res) => {
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return res.status(401).json({ error: 'invalid credentials' });
 
+  // Check if 2FA is enabled
+  if (user.twoFactorEnabled) {
+    // Return a temporary token indicating 2FA is required
+    const tempToken = jwt.sign(
+      { 
+        email: user.email, 
+        temp: true, 
+        purpose: '2fa_required' 
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '10m' }
+    );
+    
+    return res.json({ 
+      requires2FA: true, 
+      tempToken,
+      message: '2FA verification required' 
+    });
+  }
+
+  // Normal login without 2FA
   const token = signToken(user);
-  res.json({ token, role: user.role });
+  res.json({ 
+    token, 
+    role: user.role,
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      photo: user.photo,
+      phone: user.phone,
+      twoFactorEnabled: user.twoFactorEnabled,
+      createdAt: user.createdAt,
+      // Include role-specific fields
+      spotifyLink: user.spotifyLink,
+      venueAddress: user.venueAddress,
+      capacity: user.capacity,
+      bandName: user.bandName,
+      genres: user.genres,
+      companyName: user.companyName,
+      contactPerson: user.contactPerson,
+      address: user.address
+    }
+  });
+});
+
+// PUT /api/auth/update-profile
+router.put('/update-profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.sub;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Fields that can be updated
+    const updateFields = [
+      'email', 'phone', 'contactPerson', 'address', 'bio', 'website',
+      'instagramLink', 'facebookLink', 'companyName', 'experience',
+      'crewSize', 'equipmentDetails', 'genre', 'instruments', 'performanceStyle',
+      'equipment', 'eventTypes', 'services', 'lightTypes', 'bandName',
+      'genres', 'members', 'youtubeLink', 'venueAddress', 'capacity', 'spotifyLink'
+    ];
+
+    // Update only provided fields
+    updateFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    });
+
+    // Validate email if it's being updated
+    if (req.body.email && !validator.isEmail(req.body.email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Check if email is already taken by another user
+    if (req.body.email && req.body.email !== user.email) {
+      const existingUser = await User.findOne({ email: req.body.email });
+      if (existingUser) {
+        return res.status(400).json({ error: 'Email already in use' });
+      }
+    }
+
+    await user.save();
+
+    // Return updated user data (excluding sensitive information)
+    const userData = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      photo: user.photo,
+      phone: user.phone,
+      twoFactorEnabled: user.twoFactorEnabled,
+      createdAt: user.createdAt,
+      // Include all profile fields
+      contactPerson: user.contactPerson,
+      address: user.address,
+      bio: user.bio,
+      website: user.website,
+      instagramLink: user.instagramLink,
+      facebookLink: user.facebookLink,
+      companyName: user.companyName,
+      experience: user.experience,
+      crewSize: user.crewSize,
+      equipmentDetails: user.equipmentDetails,
+      genre: user.genre,
+      instruments: user.instruments,
+      performanceStyle: user.performanceStyle,
+      equipment: user.equipment,
+      eventTypes: user.eventTypes,
+      services: user.services,
+      lightTypes: user.lightTypes,
+      bandName: user.bandName,
+      genres: user.genres,
+      members: user.members,
+      youtubeLink: user.youtubeLink,
+      venueAddress: user.venueAddress,
+      capacity: user.capacity,
+      spotifyLink: user.spotifyLink
+    };
+
+    res.json(userData);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 module.exports = router;
