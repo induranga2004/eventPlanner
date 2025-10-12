@@ -86,18 +86,35 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
         notes=body.special_instructions or ""
     )
 
+    # Remove any existing plans for this campaign to avoid duplicates
+    existing_plans = db.query(EventPlan).filter(EventPlan.campaign_id == campaign_id).all()
+    for plan in existing_plans:
+        db.delete(plan)
+    db.flush()
+
     # Generate concepts and persist
     concept_list: List[Concept] = []
     ids = concept_ids(body.number_of_concepts)
-    
+
     # Get venue suggestions for dynamic pricing
     suggested_venues = find_venues(body.city, body.event_type, top_k=10)
-    
-    for idx, cid in enumerate(ids):
+
+    # Determine recommended lead time and timeline up front
+    suggested = suggested_venues[:5]
+    known_leads = [
+        v.get("min_lead_days") for v in suggested
+        if isinstance(v.get("min_lead_days"), int) and v.get("min_lead_days") > 0
+    ]
+    recommended_lead_days = max(known_leads) if known_leads else 30
+
+    base_timeline = compress_milestones(event_info.date)
+    tl_with_lead = apply_venue_lead_time(event_info.date, base_timeline, recommended_lead_days)
+
+    for cid in ids:
         title = pick_title(cid, body.event_type)
         assumptions = pick_assumptions(cid)
         concept_details = pick_concept_details(cid, body.event_type)
-        
+
         # Generate initial costs based on concept theme
         cost_pairs = generate_costs(body.total_budget_lkr, cid)
         costs = [CostItem(category=c, amount_lkr=v) for c, v in cost_pairs]
@@ -116,10 +133,8 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
         db.add(plan)
         for c in costs:
             db.add(PlanCost(id=uuid(), event_plan_id=plan_id, category=c.category, amount_lkr=c.amount_lkr))
-        # timeline base (same per concept)
-        for off, label in compress_milestones(event_info.date):
+        for off, label in tl_with_lead:
             db.add(PlanTimeline(id=uuid(), event_plan_id=plan_id, offset_days=off, milestone=label))
-        db.commit()
 
         concept_list.append(
             Concept(
@@ -132,17 +147,7 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             )
         )
 
-    # Use previously fetched venue suggestions
-    suggested = suggested_venues[:5]
-    known_leads = [
-        v.get("min_lead_days") for v in suggested
-        if isinstance(v.get("min_lead_days"), int) and v.get("min_lead_days") > 0
-    ]
-    recommended_lead_days = max(known_leads) if known_leads else 30
-
-    # Build timeline with lead-time consideration
-    base_tl = [(o, m) for o, m in compress_milestones(event_info.date)]
-    tl_with_lead = apply_venue_lead_time(event_info.date, base_tl, recommended_lead_days)
+    db.commit()
 
     # Venue booking risk note
     days_to_event = (event_info.date - date.today()).days

@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from fastapi import FastAPI, HTTPException, Depends
@@ -14,12 +15,15 @@ from routers.planner import router as planner_router
 from routers.venues import router as venues_router
 from routers.catering import router as catering_router  # <-- add catering route
 
+
+logger = logging.getLogger(__name__)
+
 # Load environment variables from .env file
 load_dotenv()
 
 # Check for OpenAI API key (used by the CrewAI content demo and OpenAI-powered tools)
 if not os.getenv("OPENAI_API_KEY"):
-    raise ValueError("OPENAI_API_KEY environment variable not found. Please set it in your .env file.")
+    logger.warning("OPENAI_API_KEY not found; AI-powered enhancements will fall back to CSV data only.")
 
 # --- FastAPI App ---
 app = FastAPI(

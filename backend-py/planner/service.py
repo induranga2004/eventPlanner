@@ -242,34 +242,56 @@ def feasibility_notes(total: int, attendees: int):
         notes.append("Budget appears tight for this scale; consider sponsorships or scope adjustments")
     return notes
 
+def _as_int(value, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def calculate_venue_cost(venue_data: dict, attendees: int, concept_id: str) -> int:
     """Calculate venue cost based on selected venue and concept"""
     if not venue_data:
         theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
         # Fallback estimation based on concept target
         return int(attendees * theme["target_per_person"] * theme["venue_weight"])
-    
-    # Use actual venue data if available
-    base_cost = venue_data.get("avg_cost_lkr", 0)
-    if base_cost == 0:
-        # Estimate based on capacity and type
-        capacity = venue_data.get("capacity", 100)
-        venue_type = venue_data.get("type", "").lower()
-        
-        if "luxury" in venue_type or "5-star" in venue_type:
-            base_cost = capacity * 3000
-        elif "hotel" in venue_type or "ballroom" in venue_type:
-            base_cost = capacity * 2000
-        elif "garden" in venue_type or "outdoor" in venue_type:
-            base_cost = capacity * 1500
-        else:
-            base_cost = capacity * 1200
-    
-    # Adjust for actual attendees vs capacity
-    if attendees > 0:
-        capacity_ratio = min(attendees / max(venue_data.get("capacity", attendees), 1), 1.0)
-        return int(base_cost * capacity_ratio)
-    
+
+    # Prefer explicit per-person pricing if supplied
+    per_person_keys = [
+        "per_person_lkr",
+        "per_person_cost_lkr",
+        "pp_cost_lkr",
+        "per_person",
+    ]
+    for key in per_person_keys:
+        pp_cost = _as_int(venue_data.get(key), 0)
+        if pp_cost > 0 and attendees > 0:
+            return pp_cost * attendees
+
+    pricing_type = (venue_data.get("pricing_type") or venue_data.get("pricing_model") or "").lower()
+    if pricing_type in {"per_person", "per_head"} and attendees > 0:
+        base = _as_int(venue_data.get("avg_cost_lkr"), 0)
+        if base > 0:
+            return base * attendees
+
+    # Treat avg_cost_lkr as a fixed rental unless told otherwise
+    base_cost = _as_int(venue_data.get("avg_cost_lkr"), 0)
+    if base_cost > 0:
+        return base_cost
+
+    # Estimate based on capacity and type when no explicit pricing is provided
+    capacity = _as_int(venue_data.get("capacity"), attendees or 100)
+    venue_type = (venue_data.get("type") or "").lower()
+
+    if "luxury" in venue_type or "5-star" in venue_type:
+        base_cost = capacity * 3000
+    elif "hotel" in venue_type or "ballroom" in venue_type:
+        base_cost = capacity * 2000
+    elif "garden" in venue_type or "outdoor" in venue_type:
+        base_cost = capacity * 1500
+    else:
+        base_cost = capacity * 1200
+
     return base_cost
 
 def calculate_catering_cost(catering_data: dict, attendees: int, concept_id: str) -> int:
@@ -278,12 +300,30 @@ def calculate_catering_cost(catering_data: dict, attendees: int, concept_id: str
         theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
         # Fallback estimation based on concept target
         return int(attendees * theme["target_per_person"] * theme["catering_weight"])
-    
-    # Use actual catering data
-    pp_min = catering_data.get("pp_min_lkr", 0)
-    pp_max = catering_data.get("pp_max_lkr", 0)
-    
-    if pp_min > 0 and pp_max > 0:
+
+    # Direct per-person price overrides
+    per_person_keys = [
+        "pp_cost_lkr",
+        "per_person_lkr",
+        "per_person_cost_lkr",
+        "pp_lkr",
+    ]
+    for key in per_person_keys:
+        value = _as_int(catering_data.get(key), 0)
+        if value > 0 and attendees > 0:
+            return value * attendees
+
+    total_keys = ["package_total_lkr", "total_cost_lkr"]
+    for key in total_keys:
+        value = _as_int(catering_data.get(key), 0)
+        if value > 0:
+            return value
+
+    # Use range-based pricing if available
+    pp_min = _as_int(catering_data.get("pp_min_lkr"), 0)
+    pp_max = _as_int(catering_data.get("pp_max_lkr"), 0)
+
+    if pp_min > 0 and pp_max > 0 and attendees > 0:
         # Use concept preference to choose within range
         theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
         if theme["catering_style"] in ["premium_plated", "gourmet_buffet"]:
@@ -292,9 +332,9 @@ def calculate_catering_cost(catering_data: dict, attendees: int, concept_id: str
             per_person = int(pp_min + (pp_max - pp_min) * 0.6)  # Mid-high
         else:  # traditional_family
             per_person = int(pp_min + (pp_max - pp_min) * 0.4)  # Mid-low
-            
+
         return per_person * attendees
-    
+
     # Fallback if no pricing data
     theme = CONCEPT_THEMES.get(concept_id, CONCEPT_THEMES["A1"])
     return int(attendees * theme["target_per_person"] * theme["catering_weight"])
@@ -322,13 +362,17 @@ def generate_dynamic_costs(total_budget_lkr: int, concept_id: str, venue_data: d
         ("venue", venue_cost),
         ("catering", catering_cost)
     ]
-    
-    # Distribute remaining budget across other categories
-    for category, weight in other_weights.items():
-        normalized_weight = weight / total_other_weight if total_other_weight > 0 else 0
-        category_cost = int(remaining_budget * normalized_weight)
-        cost_breakdown.append((category, category_cost))
-    
+
+    if remaining_budget > 0 and total_other_weight > 0:
+        other_split = [
+            (category, weight / total_other_weight)
+            for category, weight in other_weights.items()
+        ]
+        cost_breakdown.extend(_round_and_fix(remaining_budget, other_split))
+    else:
+        for category in other_weights.keys():
+            cost_breakdown.append((category, 0))
+
     return cost_breakdown
 
 def uuid() -> str:
