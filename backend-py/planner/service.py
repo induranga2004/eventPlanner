@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from agents.concept_generator import ConceptGenerationUnavailable
 from models.concept import Concept
-from utils.concept_repository import ensure_seed_concept, get_concept, list_concepts
+from utils.concept_repository import concept_notice, ensure_seed_concept, get_concept, list_concepts
 from utils.data_loader import load_concepts as _csv_load  # Fallback diagnostics
 
 MILESTONES = [
@@ -166,6 +166,9 @@ def feasibility_notes(total: int, attendees: int, concept_id: Optional[str] = No
     notes.append("Budget mix prioritises headline musical production values.")
     if attendees >= 200 and attendees > 0 and total / attendees < 1500:
         notes.append("Budget appears tight for this scale; consider sponsorships or scope adjustments")
+    notice = concept_notice()
+    if notice and notice not in notes:
+        notes.append(notice)
     return notes
 
 

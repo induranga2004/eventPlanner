@@ -21,7 +21,11 @@ else:  # pragma: no cover - runtime fallback when pymongo absent
 
 PyMongoError = _PyMongoError
 
-from agents.concept_generator import ConceptGenerationUnavailable, generate_concept
+from agents.concept_generator import (
+    ConceptGenerationQuotaExceeded,
+    ConceptGenerationUnavailable,
+    generate_concept,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +33,36 @@ _BOOL_TRUE = {"1", "true", "yes", "on"}
 _COLLECTION_ENV = "MONGO_CONCEPTS_COLLECTION"
 _DEFAULT_COLLECTION = "concepts"
 
+_AI_DISABLED = False
+_NOTICE_MESSAGE: Optional[str] = None
 
-def _use_ai_concepts() -> bool:
+
+def _env_ai_enabled() -> bool:
     return os.getenv("USE_AI_CONCEPTS", "0").strip().lower() in _BOOL_TRUE
+
+
+def _ai_enabled() -> bool:
+    return _env_ai_enabled() and not _AI_DISABLED
+
+
+def _set_notice(message: str) -> None:
+    global _NOTICE_MESSAGE
+    _NOTICE_MESSAGE = message
+
+
+def _disable_ai(reason: str) -> None:
+    global _AI_DISABLED
+    if not reason:
+        reason = "OpenAI concept generation unavailable; using CSV fallback."
+    _AI_DISABLED = True
+    _set_notice(reason)
+    logger.warning(reason)
+
+
+def concept_notice() -> Optional[str]:
+    """Return the latest concept pipeline notice (if any)."""
+
+    return _NOTICE_MESSAGE
 
 
 def _collection() -> Any:
@@ -115,7 +146,13 @@ def _transform_csv_records(limit: Optional[int]) -> List[Concept]:
 def ensure_seed_concept(context: Optional[Dict] = None) -> Concept:
     """Ensure at least one concept exists in Mongo when AI mode is enabled."""
 
-    if not _use_ai_concepts():
+    if not _env_ai_enabled():
+        concepts = _transform_csv_records(limit=1)
+        if not concepts:
+            raise RuntimeError("No concepts available from CSV fallback.")
+        return concepts[0]
+
+    if not _ai_enabled():
         concepts = _transform_csv_records(limit=1)
         if not concepts:
             raise RuntimeError("No concepts available from CSV fallback.")
@@ -125,14 +162,28 @@ def ensure_seed_concept(context: Optional[Dict] = None) -> Concept:
     if concepts:
         return concepts[0]
 
-    seeded = _seed_via_ai(context)
+    try:
+        seeded = _seed_via_ai(context)
+    except ConceptGenerationQuotaExceeded as exc:
+        _disable_ai(str(exc))
+        concepts = _transform_csv_records(limit=1)
+        if not concepts:
+            raise RuntimeError("No concepts available from CSV fallback.") from exc
+        return concepts[0]
+    except ConceptGenerationUnavailable as exc:
+        logger.warning("AI seeding failed, falling back to CSV: %s", exc)
+        concepts = _transform_csv_records(limit=1)
+        if not concepts:
+            raise RuntimeError("No concepts available from CSV fallback.") from exc
+        return concepts[0]
+
     if not seeded:
         raise ConceptGenerationUnavailable("AI seeding returned no concepts")
     return seeded[0]
 
 
 def list_concepts(limit: Optional[int] = None) -> List[Concept]:
-    if _use_ai_concepts():
+    if _ai_enabled():
         concepts = _load_from_mongo(limit)
         if concepts:
             return concepts
@@ -141,13 +192,16 @@ def list_concepts(limit: Optional[int] = None) -> List[Concept]:
             if limit:
                 return seeded[:limit]
             return seeded
+        except ConceptGenerationQuotaExceeded as exc:
+            _disable_ai(str(exc))
+            logger.warning("AI quota exhausted; falling back to CSV concepts.")
         except ConceptGenerationUnavailable as exc:
             logger.warning("AI seeding failed, falling back to CSV: %s", exc)
     return _transform_csv_records(limit)
 
 
 def get_concept(concept_id: str) -> Concept:
-    if _use_ai_concepts():
+    if _ai_enabled():
         for concept in _load_from_mongo(limit=None):
             if concept.concept_id == concept_id:
                 return concept
@@ -156,8 +210,11 @@ def get_concept(concept_id: str) -> Concept:
             for concept in seeded:
                 if concept.concept_id == concept_id:
                     return concept
-        except ConceptGenerationUnavailable:
-            logger.warning("Unable to generate concept %s via AI, trying CSV fallback", concept_id)
+        except ConceptGenerationQuotaExceeded as exc:
+            _disable_ai(str(exc))
+            logger.warning("AI quota exhausted while fetching %s; using CSV fallback", concept_id)
+        except ConceptGenerationUnavailable as exc:
+            logger.warning("Unable to generate concept %s via AI, trying CSV fallback (%s)", concept_id, exc)
 
     records = load_csv_concepts()
     try:

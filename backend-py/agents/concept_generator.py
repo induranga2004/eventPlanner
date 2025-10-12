@@ -16,6 +16,10 @@ class ConceptGenerationUnavailable(RuntimeError):
     """Raised when OpenAI-based concept generation cannot proceed."""
 
 
+class ConceptGenerationQuotaExceeded(ConceptGenerationUnavailable):
+    """Raised when OpenAI quota is exhausted and CSV fallback should be used."""
+
+
 def _client() -> OpenAI:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -62,7 +66,11 @@ def generate_concept(context: Dict[str, Any] | None = None) -> Dict[str, Any]:
         )
     except (APIError, Exception) as exc:  # pragma: no cover - network boundary
         logger.error("Concept generation failed: %s", exc)
-        raise ConceptGenerationUnavailable(str(exc)) from exc
+        message = str(exc)
+        lowered = message.lower()
+        if any(token in lowered for token in ("insufficient_quota", "exceeded your current quota", "quota")):
+            raise ConceptGenerationQuotaExceeded("OpenAI quota exhausted; using CSV fallback.") from exc
+        raise ConceptGenerationUnavailable(message) from exc
 
     content = response.choices[0].message.content if response.choices else None
     if not content:
