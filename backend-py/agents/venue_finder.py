@@ -22,6 +22,20 @@ def _csv_path() -> str:
         "data", "venues.csv"
     )
 
+MUSICAL_KEYWORDS = {
+    "musical",
+    "concert",
+    "arena",
+    "auditorium",
+    "theatre",
+    "theater",
+    "festival",
+    "hall",
+    "amphitheatre",
+    "performance",
+}
+
+
 def csv_fallback_search(city: str, event_type: str, top_k: int = 7) -> List[Dict]:
     """
     data/venues.csv columns:
@@ -38,8 +52,14 @@ def csv_fallback_search(city: str, event_type: str, top_k: int = 7) -> List[Dict
             if row.get("city", "").strip().lower() != city.strip().lower():
                 continue
             t = (row.get("type", "") or "").lower()
-            # loose type match
-            if (event_type.lower() in t) or (t in event_type.lower()) or (event_type.lower() == "wedding"):
+            evt = (event_type or "").strip().lower()
+
+            if evt == "musical":
+                match = (not t) or any(keyword in t for keyword in MUSICAL_KEYWORDS)
+            else:
+                match = (evt in t) or (t in evt) or (evt == "wedding")
+
+            if match:
                 results.append({
                     "name": row.get("name"),
                     "address": row.get("address"),

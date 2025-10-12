@@ -17,10 +17,10 @@ class VenueOut(BaseModel):
     min_lead_days: Optional[int] = None
     source: Optional[str] = None
 
-@router.get("/suggest", response_model=List[VenueOut], summary="Suggest venues for a city & event type")
+@router.get("/suggest", response_model=List[VenueOut], summary="Suggest musical venues for a city")
 def suggest_venues(
     city: str = Query(..., description="City name, e.g., Colombo"),
-    event_type: str = Query(..., description="wedding|concert|corporate|workshop|birthday"),
+    event_type: str = Query("musical", description="Event type. Defaults to musical."),
     top_k: int = Query(7, ge=1, le=12)
 ):
     return find_venues(city=city, event_type=event_type, top_k=top_k)

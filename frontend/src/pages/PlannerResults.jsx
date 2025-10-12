@@ -59,7 +59,7 @@ export default function PlannerResults({ data, campaignId }) {
 
   return (
     <div className="planner-results" style={{ display: "grid", gap: 16 }}>
-      <h2>Plans for {data.event?.name || "Event"}</h2>
+  <h2>Musical Plans for {data.event?.name || "Event"}</h2>
 
       {/* Feasibility notes */}
       <div className="notes" style={{ display: "grid", gap: 6 }}>
@@ -136,9 +136,9 @@ export default function PlannerResults({ data, campaignId }) {
         )}
 
         {/* Concert stall plan */}
-        {data.event?.type === "concert" && stallPlan && (
+        {stallPlan && (
           <div style={{marginBottom:10, padding:10, border:"1px solid #e8e8e8", borderRadius:10}}>
-            <strong>Food Stall Plan</strong><br/>
+            <strong>Performance Night Stall Plan</strong><br/>
             Stalls: {stallPlan.stall_count}
             {" • "}Mix: {Array.isArray(stallPlan.suggested_mix) ? stallPlan.suggested_mix.join(", ") : "N/A"}
             {" • "}Per person:{" "}
@@ -167,7 +167,7 @@ export default function PlannerResults({ data, campaignId }) {
             </li>
           ))}
           {(!inhouse && (!external || external.length === 0)) && (
-            <li style={{opacity:.7}}>No catering options found for this city.</li>
+            <li style={{opacity:.7}}>No catering options matched for this musical event.</li>
           )}
         </ul>
       </div>
@@ -200,7 +200,7 @@ export default function PlannerResults({ data, campaignId }) {
             </li>
           ))}
           {(!data.derived?.suggested_venues || data.derived?.suggested_venues?.length === 0) && (
-            <li style={{ opacity: .8 }}>No venue suggestions available for this city/type.</li>
+            <li style={{ opacity: .8 }}>No venue suggestions available for this musical brief.</li>
           )}
         </ul>
       </div>

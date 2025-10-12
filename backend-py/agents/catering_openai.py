@@ -68,7 +68,7 @@ def load_city_caterers(city: str, want_stalls: bool) -> List[Dict]:
     out.sort(key=lambda x: (-x.get("rating", 0), x.get("pp_min_lkr", 0)))
     return out
 
-def _default_concert_stall_plan(attendees: int) -> Dict:
+def _default_performance_catering_plan(attendees: int) -> Dict:
     count = max(2, math.ceil(attendees / 180))
     categories = ["Savory/Grill", "Vegetarian", "Dessert", "Beverage", "Snack/Bites"]
     mix = [categories[i % len(categories)] for i in range(count)]
@@ -85,11 +85,12 @@ def suggest_catering_with_openai(
     attendees: int,
     total_budget_lkr: Optional[int] = None
 ) -> Dict:
-    want_stalls = event_type.lower() == "concert"
+    normalized_type = (event_type or "").strip().lower()
+    want_stalls = normalized_type in {"musical", "concert", "festival", "performance"}
 
     inhouse = load_inhouse_for_venue(venue)
     options = load_city_caterers(city, want_stalls)
-    stall_plan = _default_concert_stall_plan(attendees) if want_stalls else None
+    stall_plan = _default_performance_catering_plan(attendees) if want_stalls else None
 
     options_short = [
         {
@@ -106,10 +107,10 @@ def suggest_catering_with_openai(
     ]
 
     system = (
-        "You are a catering planner. Use only the facts provided to propose practical catering ideas. "
+        "You are a catering planner specialising in live musical events in Colombo. Use only the facts provided to propose practical catering ideas. "
         "If in-house catering exists, prefer it when affordable. "
-        "For concerts, propose food stalls with a sensible mix and an estimated per-person spend. "
-        "Keep currency in LKR, do not invent prices beyond given ranges."
+        "For musical performances and festivals, suggest stall mixes with realistic per-person spend. "
+        "Keep currency in LKR and stay within provided price ranges."
     )
     user = {
         "city": city,
@@ -150,7 +151,9 @@ def suggest_catering_with_openai(
             "inhouse": inhouse,
             "external_options": options_short,
             "stall_plan": stall_plan,
-            "notes": ["Model output could not be parsed; returning raw options."]
+            "notes": [
+                "AI response unavailable; providing curated Colombo musical catering options."
+            ]
         }
 
     for k in ("inhouse","external_options","stall_plan","notes"):

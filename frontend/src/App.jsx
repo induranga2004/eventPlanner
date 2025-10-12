@@ -14,7 +14,7 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>Event Planner AI</h1>
+  <h1>Musical Event Planner AI</h1>
       {!data ? (
         <PlannerWizard onGenerated={onGenerated} />
       ) : (

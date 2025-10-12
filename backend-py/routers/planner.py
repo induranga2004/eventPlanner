@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from typing import List, Literal, Optional
+from typing import List, Optional
 from datetime import date
 
 from config.database import get_db
@@ -10,27 +10,31 @@ from models.event_planner import EventPlan, PlanCost, PlanTimeline, SelectedPlan
 from models.campaign import Campaign
 
 from planner.service import (
-    generate_costs, compress_milestones, concept_ids,
-    pick_title, pick_assumptions, pick_concept_details, feasibility_notes, uuid,
-    apply_venue_lead_time, generate_dynamic_costs
+    DEFAULT_EVENT_TYPE,
+    generate_costs,
+    compress_milestones,
+    concept_ids,
+    pick_title,
+    pick_assumptions,
+    pick_concept_details,
+    feasibility_notes,
+    uuid,
+    apply_venue_lead_time,
+    generate_dynamic_costs,
 )
 from agents.venue_finder import find_venues
 from agents.catering_openai import suggest_catering_with_openai  # <-- NEW
 
 router = APIRouter(prefix="/campaigns", tags=["planner"])
 
-EventType = Literal["wedding", "concert", "corporate", "workshop", "birthday", "graduation", "anniversary", "conference"]
+DEFAULT_CITY = "Colombo"
 
 class WizardInput(BaseModel):
     campaign_id: str
     event_name: str
-    event_type: EventType
-    city: str
-    venue: Optional[str] = ""
+    venue: str
     event_date: date
     attendees_estimate: int = Field(ge=1)
-    audience_profile: str
-    special_instructions: Optional[str] = ""
     total_budget_lkr: int = Field(ge=50000)
     number_of_concepts: int = Field(ge=1, le=4, default=2)
 
@@ -48,13 +52,9 @@ class Concept(BaseModel):
 
 class EventInfo(BaseModel):
     name: str
-    type: EventType
-    city: str
     venue: str
     date: date
     attendees: int
-    audience_profile: str
-    notes: str
 
 class TimelineItem(BaseModel):
     offset_days: int
@@ -77,13 +77,9 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
 
     event_info = EventInfo(
         name=body.event_name,
-        type=body.event_type,
-        city=body.city,
-        venue=body.venue or "",
+        venue=body.venue,
         date=body.event_date,
         attendees=body.attendees_estimate,
-        audience_profile=body.audience_profile,
-        notes=body.special_instructions or ""
     )
 
     # Remove any existing plans for this campaign to avoid duplicates
@@ -97,7 +93,7 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     ids = concept_ids(body.number_of_concepts)
 
     # Get venue suggestions for dynamic pricing
-    suggested_venues = find_venues(body.city, body.event_type, top_k=10)
+    suggested_venues = find_venues(DEFAULT_CITY, DEFAULT_EVENT_TYPE, top_k=10)
 
     # Determine recommended lead time and timeline up front
     suggested = suggested_venues[:5]
@@ -111,9 +107,9 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     tl_with_lead = apply_venue_lead_time(event_info.date, base_timeline, recommended_lead_days)
 
     for cid in ids:
-        title = pick_title(cid, body.event_type)
+        title = pick_title(cid)
         assumptions = pick_assumptions(cid)
-        concept_details = pick_concept_details(cid, body.event_type)
+        concept_details = pick_concept_details(cid)
 
         # Generate initial costs based on concept theme
         cost_pairs = generate_costs(body.total_budget_lkr, cid)
@@ -159,8 +155,8 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
 
     # --- NEW: Catering suggestions (OpenAI over CSVs) ---
     catering = suggest_catering_with_openai(
-        city=body.city,
-        event_type=body.event_type,
+        city=DEFAULT_CITY,
+        event_type=DEFAULT_EVENT_TYPE,
         venue=body.venue or None,
         attendees=body.attendees_estimate,
         total_budget_lkr=body.total_budget_lkr

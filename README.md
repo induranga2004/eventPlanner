@@ -1,6 +1,6 @@
-# Event Planner Project
+# Musical Event Planner Project
 
-Welcome to the Event Planner project! This guide will walk you through the initial setup and the development workflow for contributing to the project.
+Welcome to the Musical Event Planner project! This guide outlines the setup and workflow for contributing to our specialised planner focused on live musical experiences in Colombo.
 
 ## 1. Development Workflow
 
@@ -36,7 +36,7 @@ cd eventPlanner
 
 ### Step 2: Set Up Environment Variables
 
-Each service requires its own environment variables. You will find an `.env.example` file in each of the `frontend`, `backend-node`, and `backend-py` directories.
+Each service requires its own environment variables. You will find an `.env.example` file in each of the `frontend`, `backend-node`, and `backend-py` directories (the active planner is the Python backend).
 
 1.  **For each service**, create a copy of the `.env.example` file and name it `.env`.
 2.  Fill in the required values in each `.env` file:
@@ -44,7 +44,8 @@ Each service requires its own environment variables. You will find an `.env.exam
         *   `MONGO_URI`: Your MongoDB connection string.
         *   `JWT_SECRET`: A secret string for signing authentication tokens.
     *   `backend-py/.env`:
-        *   `SERPER_API_KEY`: Your API key from [Serper.dev](https://serper.dev/) for the AI agent's search tool.
+    *   `SERPER_API_KEY`: Your API key from [Serper.dev](https://serper.dev/) for the AI agent's search tool.
+    *   `OPENAI_API_KEY`: Optional, enables richer venue/catering intelligence. Without it the system falls back to curated CSV data.
     *   `frontend/.env`:
         *   `VITE_API_BASE_URL`: The full URL to the Node.js backend API (`http://localhost:4000/api`).
 
@@ -64,7 +65,7 @@ You need to install dependencies for each service separately.
     npm install
     ```
 
--   **Backend (Python):**
+-   **Backend (Python musical planner):**
     ```bash
     cd ../backend-py
     pip install -r requirements.txt
@@ -88,11 +89,11 @@ Run each service in a separate terminal.
     ```
     *The Node.js API will be running at `http://localhost:4000`.*
 
--   **Backend (Python):**
+-   **Backend (Python musical planner):**
     ```bash
     cd backend-py
-    uvicorn main:app --reload
+    uvicorn main:app --host 127.0.0.1 --port 1800 --reload
     ```
-    *The Python API will be running at `http://localhost:8000`.*
+    *The Python API will be running at `http://127.0.0.1:1800`.*
 
 You are now ready to start developing!

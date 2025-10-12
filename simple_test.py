@@ -2,13 +2,13 @@ import requests
 import json
 from datetime import date, timedelta
 
-print("🎭 Testing Enhanced Concept System")
+print("� Testing Musical Planner System")
 print("=" * 50)
 
 try:
     # Create campaign
     print("\n1. Creating campaign...")
-    r = requests.post("http://127.0.0.1:1800/campaigns", json={"name": "Sarah Wedding"})
+    r = requests.post("http://127.0.0.1:1800/campaigns", json={"name": "Colombo Musical Night"})
     campaign = r.json()
     campaign_id = campaign["id"]
     print(f"✅ Campaign: {campaign['name']} (ID: {campaign_id})")
@@ -18,16 +18,12 @@ try:
     event_date = (date.today() + timedelta(days=120)).isoformat()
     plan_data = {
         "campaign_id": campaign_id,
-        "event_name": "Sarah Wedding",
-        "event_type": "wedding",
-        "city": "Colombo",
-        "venue": "",
+        "event_name": "Colombo Musical Night",
+        "venue": "Lotus Tower Sky Lounge",
         "event_date": event_date,
         "attendees_estimate": 180,
-        "audience_profile": "Family and friends mix",
-        "special_instructions": "Vegetarian options",
-        "total_budget_lkr": 2500000,
-        "number_of_concepts": 4
+        "total_budget_lkr": 2_500_000,
+        "number_of_concepts": 4,
     }
 
     r2 = requests.post(f"http://127.0.0.1:1800/campaigns/{campaign_id}/planner/generate", json=plan_data)

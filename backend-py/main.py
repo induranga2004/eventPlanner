@@ -27,8 +27,8 @@ if not os.getenv("OPENAI_API_KEY"):
 
 # --- FastAPI App ---
 app = FastAPI(
-    title="Event Planner & Content API",
-    description="Planner (budgets/timeline/venues/catering) + CrewAI content agent.",
+    title="Musical Event Planner API",
+    description="Specialised planner for live musical performances with budgets, venues, catering, and CrewAI content agent.",
 )
 
 # --- CORS ---
@@ -51,11 +51,11 @@ Base.metadata.create_all(bind=engine)
 app.include_router(planner_router)
 
 # Venue suggestions:
-#   GET /venues/suggest?city=...&event_type=...&top_k=7
+#   GET /venues/suggest?city=...&event_type?=musical&top_k=7
 app.include_router(venues_router)
 
 # Catering suggestions (OpenAI + CSV facts):
-#   GET /catering/suggest?city=...&event_type=...&venue=...&attendees=...
+#   GET /catering/suggest?city=...&event_type?=musical&venue=...&attendees=...
 app.include_router(catering_router)
 
 # --- Campaign Management Endpoints ---
@@ -137,7 +137,7 @@ def generate_content(request: TopicRequest):
 
 @app.get("/", summary="Health Check")
 def read_root():
-    return {"status": "Advanced Event Planner API is running"}
+    return {"status": "Musical Event Planner API is running"}
 
 # --- Dev runner ---
 if __name__ == "__main__":
