@@ -22,14 +22,6 @@ try:
                 "rating": 4.8
             }
         },
-        "catering_selection": {
-            "caterer_name": "Premium Catering Co",
-            "catering_data": {
-                "name": "Premium Catering Co",
-                "pp_cost_lkr": 8500,
-                "service_type": "Premium Plated"
-            }
-        },
         "attendees": 180,
         "total_budget_lkr": 2500000
     }
@@ -41,7 +33,6 @@ try:
         print(f"✅ Updated costs for concept {result['concept_id']}:")
         print(f"   New total: LKR {result['total_lkr']:,}")
         print(f"   Venue cost: LKR {result['venue_cost']:,}")
-        print(f"   Catering cost: LKR {result['catering_cost']:,}")
         
         if result['savings_or_overage'] > 0:
             print(f"   💰 Under budget by: LKR {result['savings_or_overage']:,}")
@@ -57,7 +48,6 @@ try:
         print(f"\n🎉 Dynamic pricing system working!")
         print(f"📈 Key Features Demonstrated:")
         print(f"   ✅ Real-time venue cost calculation")
-        print(f"   ✅ Dynamic catering cost updates")
         print(f"   ✅ Budget tracking and overages")
         print(f"   ✅ Detailed cost breakdown")
         

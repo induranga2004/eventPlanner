@@ -1,72 +1,119 @@
 # backend-py/agents/catering_openai.py
-import os, csv, math, json
-from typing import List, Dict, Optional
+import json
+import math
+import os
+from typing import Any, Dict, List, Optional
+
+from utils.provider_repository import find_venue_by_name, list_caterers
+
 try:
     from openai import OpenAI
+
     _client = OpenAI() if os.getenv("OPENAI_API_KEY") else None
     _OPENAI_AVAILABLE = True
 except ImportError:
     _client = None
     _OPENAI_AVAILABLE = False
 
-_ROOT = os.path.dirname(os.path.dirname(__file__))
-_VENUES_CSV = os.path.join(_ROOT, "data", "venues.csv")
-_CATERERS_CSV = os.path.join(_ROOT, "data", "caterers.csv")
 
-def _read_csv(path: str) -> List[Dict]:
-    if not os.path.exists(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
-
-def _bool(s: Optional[str]) -> bool:
-    return str(s or "").strip().lower() in ("1","true","yes","y")
-
-def load_inhouse_for_venue(venue_name: Optional[str]) -> Optional[Dict]:
-    if not venue_name:
-        return None
-    rows = _read_csv(_VENUES_CSV)
-    vname = venue_name.strip().lower()
-    for r in rows:
-        if (r.get("name") or "").strip().lower() == vname:
-            has = _bool(r.get("has_inhouse_catering"))
-            pp = int(r.get("catering_pp_lkr") or 0)
-            if has and pp > 0:
-                return {
-                    "name": r.get("name"),
-                    "website": r.get("website"),
-                    "pp_lkr": pp,
-                    "source": "venues_csv"
-                }
+def _first(doc: Dict[str, Any], keys: List[str]) -> Optional[Any]:
+    for key in keys:
+        value = doc.get(key)
+        if value not in (None, "", []):
+            return value
     return None
 
-def load_city_caterers(city: str, want_stalls: bool) -> List[Dict]:
-    rows = _read_csv(_CATERERS_CSV)
-    out = []
-    for r in rows:
-        if (r.get("city") or "").strip().lower() != city.strip().lower():
-            continue
-        stall_ok = _bool(r.get("stall_ok"))
-        if want_stalls and not stall_ok:
-            continue
-        try:
-            out.append({
-                "name": r.get("name"),
-                "type": r.get("type"),
-                "pp_min_lkr": int(r.get("pp_min_lkr") or 0),
-                "pp_max_lkr": int(r.get("pp_max_lkr") or 0),
-                "address": r.get("address"),
-                "capacity_range": r.get("capacity_range"),
-                "contact": r.get("contact"),
-                "website": r.get("website"),
-                "stall_ok": stall_ok,
-                "rating": float(r.get("rating") or 0.0),
-                "source": "caterers_csv"
-            })
-        except:
-            continue
-    out.sort(key=lambda x: (-x.get("rating", 0), x.get("pp_min_lkr", 0)))
-    return out
+
+def _to_bool(value: Any) -> Optional[bool]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "y", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "n", "off"}:
+            return False
+    return None
+
+
+def _to_int(value: Any) -> Optional[int]:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        digits = [part for part in value.replace(",", " ").split() if part.isdigit()]
+        if digits:
+            return int(digits[0])
+    return None
+
+
+def load_inhouse_for_venue(venue_name: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not venue_name:
+        return None
+
+    doc = find_venue_by_name(venue_name)
+    if not doc:
+        return None
+
+    has_inhouse = _to_bool(
+        _first(
+            doc,
+            [
+                "hasInhouseCatering",
+                "inhouseCatering",
+                "has_inhouse_catering",
+                "inHouseCatering",
+            ],
+        )
+    )
+    per_person = _to_int(
+        _first(
+            doc,
+            [
+                "cateringPerPersonLkr",
+                "catering_pp_lkr",
+                "perPersonCostLkr",
+                "perPersonLkr",
+            ],
+        )
+    )
+
+    if has_inhouse and per_person and per_person > 0:
+        return {
+            "name": _first(doc, ["venueName", "companyName", "name"]) or venue_name,
+            "website": _first(
+                doc,
+                [
+                    "website",
+                    "facebookLink",
+                    "instagramLink",
+                    "youtubeLink",
+                ],
+            ),
+            "pp_lkr": per_person,
+            "source": "mongo_users",
+        }
+
+    return None
+
+
+def load_city_caterers(city: str, want_stalls: bool) -> List[Dict[str, Any]]:
+    caterers = list_caterers(city=city, limit=30)
+    if want_stalls:
+        filtered = [c for c in caterers if c.get("stall_ok")]
+        if filtered:
+            caterers = filtered
+
+    caterers = [c for c in caterers if c.get("name")]
+    caterers.sort(key=lambda x: (-x.get("rating", 0.0), x.get("pp_min_lkr", 0)))
+    return caterers
 
 def _default_performance_catering_plan(attendees: int) -> Dict:
     count = max(2, math.ceil(attendees / 180))

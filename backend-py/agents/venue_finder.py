@@ -1,8 +1,7 @@
 # backend-py/agents/venue_finder.py
-import os
-import csv
 import json
-from typing import List, Dict
+import os
+from typing import Dict, List, Optional
 
 from crewai import Agent, Task, Crew, Process
 from crewai.llm import LLM
@@ -15,12 +14,7 @@ try:
 except Exception:
     _OPENAI_AVAILABLE = False
 
-
-def _csv_path() -> str:
-    return os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
-        "data", "venues.csv"
-    )
+from utils.provider_repository import list_venues
 
 MUSICAL_KEYWORDS = {
     "musical",
@@ -36,54 +30,36 @@ MUSICAL_KEYWORDS = {
 }
 
 
-def csv_fallback_search(city: str, event_type: str, top_k: int = 7) -> List[Dict]:
-    """
-    data/venues.csv columns:
-    city,name,type,address,capacity,avg_cost_lkr,rating,website,min_lead_days
-    """
-    path = _csv_path()
-    results: List[Dict] = []
-    if not os.path.exists(path):
-        return results
+def _matches_event_type(venue: Dict, event_type: Optional[str]) -> bool:
+    evt = (event_type or "").strip().lower()
+    if not evt:
+        return True
+    venue_type = (venue.get("type") or "").lower()
+    if not venue_type:
+        return True
+    if evt == "musical":
+        return any(keyword in venue_type for keyword in MUSICAL_KEYWORDS)
+    return evt in venue_type or venue_type in evt
 
-    with open(path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row.get("city", "").strip().lower() != city.strip().lower():
-                continue
-            t = (row.get("type", "") or "").lower()
-            evt = (event_type or "").strip().lower()
+def _mongo_base_search(city: str, event_type: str, top_k: int) -> List[Dict]:
+    candidates = list_venues(city=city, limit=max(top_k * 3, 24))
+    if not candidates:
+        return []
+    filtered = [venue for venue in candidates if _matches_event_type(venue, event_type)]
+    if not filtered:
+        filtered = candidates
+    # Order by rating, then capacity similar to CSV fallback.
+    filtered.sort(key=lambda r: (r.get("rating", 0.0) or 0.0, r.get("capacity", 0) or 0), reverse=True)
+    return filtered[: top_k * 2]
 
-            if evt == "musical":
-                match = (not t) or any(keyword in t for keyword in MUSICAL_KEYWORDS)
-            else:
-                match = (evt in t) or (t in evt) or (evt == "wedding")
 
-            if match:
-                results.append({
-                    "name": row.get("name"),
-                    "address": row.get("address"),
-                    "type": row.get("type"),
-                    "capacity": int(row.get("capacity") or 0),
-                    "avg_cost_lkr": int(row.get("avg_cost_lkr") or 0),
-                    "rating": float(row.get("rating") or 0.0),
-                    "website": row.get("website"),
-                    "min_lead_days": int(row.get("min_lead_days") or 0),
-                    "source": "csv"
-                })
-
-    results.sort(key=lambda r: (r.get("rating", 0), r.get("capacity", 0)), reverse=True)
-    return results[:top_k]
-
-def openai_venue_search(city: str, event_type: str, top_k: int = 7) -> List[Dict]:
-    """Use OpenAI to enhance venue recommendations from CSV data"""
+def openai_venue_search(city: str, event_type: str, base_venues: List[Dict], top_k: int = 7) -> List[Dict]:
+    """Use OpenAI to enhance venue recommendations from Mongo-backed data."""
     api_key = os.getenv("OPENAI_API_KEY")
     if not (_OPENAI_AVAILABLE and api_key):
         return []
 
-    # Get base venues from CSV
-    csv_venues = csv_fallback_search(city, event_type, top_k=20)  # Get more for AI to analyze
-    if not csv_venues:
+    if not base_venues:
         return []
 
     try:
@@ -95,7 +71,7 @@ You are an expert event planner specializing in {event_type} events in {city}.
 Analyze these venues and enhance the recommendations:
 
 VENUES DATA:
-{json.dumps(csv_venues, indent=2)}
+{json.dumps(base_venues, indent=2)}
 
 TASK:
 1. Rank these venues for a {event_type} in {city}
@@ -149,8 +125,7 @@ RETURN FORMAT (valid JSON only):
         
     except Exception as e:
         print(f"OpenAI venue search error: {e}")
-        # Fallback to CSV data if OpenAI fails
-        return csv_venues[:top_k]
+    return base_venues[:top_k]
 
 def crewai_venue_analysis(city: str, event_type: str, venues_data: List[Dict], top_k: int = 7) -> List[Dict]:
     """Use CrewAI with OpenAI to analyze and rank venues"""
@@ -216,22 +191,21 @@ def crewai_venue_analysis(city: str, event_type: str, venues_data: List[Dict], t
         return venues_data[:top_k]
 
 def find_venues(city: str, event_type: str, top_k: int = 7) -> List[Dict]:
-    """Find venues using OpenAI-enhanced recommendations or CSV fallback"""
-    # Get base venues from CSV
-    csv_venues = csv_fallback_search(city, event_type, top_k=15)  # Get more for AI analysis
-    
-    if not csv_venues:
+    """Find venues using OpenAI-enhanced recommendations backed by Mongo data."""
+    base_venues = _mongo_base_search(city, event_type, top_k=top_k)
+
+    if not base_venues:
         return []
     
     # Try OpenAI direct search first (faster)
-    openai_results = openai_venue_search(city, event_type, top_k=top_k)
+    openai_results = openai_venue_search(city, event_type, base_venues, top_k=top_k)
     if openai_results:
         return openai_results
     
     # Try CrewAI analysis as fallback
-    crewai_results = crewai_venue_analysis(city, event_type, csv_venues, top_k=top_k)
+    crewai_results = crewai_venue_analysis(city, event_type, base_venues, top_k=top_k)
     if crewai_results:
         return crewai_results
     
-    # Final fallback to basic CSV search
-    return csv_venues[:top_k]
+    # Final fallback is the raw Mongo-derived list
+    return base_venues[:top_k]

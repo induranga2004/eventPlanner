@@ -52,11 +52,6 @@ export default function PlannerResults({ data, campaignId }) {
     return <div>No planner data. Please generate a plan first.</div>;
   }
 
-  const catering = data?.derived?.catering_suggestions || {};
-  const inhouse = catering?.inhouse || null;
-  const stallPlan = catering?.stall_plan || null;
-  const external = catering?.external_options || [];
-
   return (
     <div className="planner-results" style={{ display: "grid", gap: 16 }}>
   <h2>Musical Plans for {data.event?.name || "Event"}</h2>
@@ -119,57 +114,6 @@ export default function PlannerResults({ data, campaignId }) {
             </button>
           </div>
         ))}
-      </div>
-
-      {/* Catering (NEW) */}
-      <div>
-        <h3>Catering</h3>
-
-        {/* In-house catering (preferred when affordable) */}
-        {inhouse && (
-          <div style={{marginBottom:10, padding:10, border:"1px solid #e8e8e8", borderRadius:10}}>
-            <strong>In-house Catering</strong><br/>
-            {inhouse.name} — Per person:{" "}
-            {typeof inhouse.pp_lkr === "number" ? <Currency value={inhouse.pp_lkr} /> : "N/A"}
-            {inhouse.website && <> • <a target="_blank" rel="noreferrer" href={inhouse.website}>website</a></>}
-          </div>
-        )}
-
-        {/* Concert stall plan */}
-        {stallPlan && (
-          <div style={{marginBottom:10, padding:10, border:"1px solid #e8e8e8", borderRadius:10}}>
-            <strong>Performance Night Stall Plan</strong><br/>
-            Stalls: {stallPlan.stall_count}
-            {" • "}Mix: {Array.isArray(stallPlan.suggested_mix) ? stallPlan.suggested_mix.join(", ") : "N/A"}
-            {" • "}Per person:{" "}
-            {Array.isArray(stallPlan.per_person_spend_lkr_range) && stallPlan.per_person_spend_lkr_range.length === 2 ? (
-              <>
-                <Currency value={stallPlan.per_person_spend_lkr_range[0]} />–<Currency value={stallPlan.per_person_spend_lkr_range[1]} />
-              </>
-            ) : "N/A"}
-          </div>
-        )}
-
-        {/* External caterers / stall vendors */}
-        <ul style={{listStyle:"none", padding:0, display:"grid", gap:10}}>
-          {external.map((o,i)=>(
-            <li key={i} style={{border:"1px solid #eee", borderRadius:10, padding:10}}>
-              <div style={{fontWeight:600}}>
-                {o.name} {o.rating ? <span style={{fontWeight:400}}>• ⭐ {o.rating}</span> : null}
-              </div>
-              <div style={{opacity:.85}}>
-                {o.type || "catering"}{" • "}
-                {o.pp_min_lkr ? `LKR ${Number(o.pp_min_lkr).toLocaleString()}` : "n/a"}
-                {o.pp_max_lkr ? ` – ${Number(o.pp_max_lkr).toLocaleString()}` : ""}
-                {o.website && <> • <a target="_blank" rel="noreferrer" href={o.website}>website</a></>}
-                {o.stall_ok ? " • stall-friendly" : ""}
-              </div>
-            </li>
-          ))}
-          {(!inhouse && (!external || external.length === 0)) && (
-            <li style={{opacity:.7}}>No catering options matched for this musical event.</li>
-          )}
-        </ul>
       </div>
 
       {/* Suggested Venues */}

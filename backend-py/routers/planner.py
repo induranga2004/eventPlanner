@@ -23,7 +23,6 @@ from planner.service import (
     generate_dynamic_costs,
 )
 from agents.venue_finder import find_venues
-from agents.catering_openai import suggest_catering_with_openai  # <-- NEW
 
 router = APIRouter(prefix="/campaigns", tags=["planner"])
 
@@ -65,7 +64,7 @@ class EventPlanOut(BaseModel):
     event: EventInfo
     concepts: List[Concept]
     timeline: List[TimelineItem]
-    # contains: feasibility_notes, suggested_venues, recommended_lead_days, venue_booking_risk, venue_booking_note, catering_suggestions
+    # contains: feasibility_notes, suggested_venues, recommended_lead_days, venue_booking_risk, venue_booking_note
     derived: dict
 
 
@@ -153,15 +152,6 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
         rld = recommended_lead_days
         risk_note = f"Event in {days_to_event} days; popular venues often require ~{rld} days lead time."
 
-    # --- NEW: Catering suggestions (OpenAI over CSVs) ---
-    catering = suggest_catering_with_openai(
-        city=DEFAULT_CITY,
-        event_type=DEFAULT_EVENT_TYPE,
-        venue=body.venue or None,
-        attendees=body.attendees_estimate,
-        total_budget_lkr=body.total_budget_lkr
-    )
-
     out = EventPlanOut(
         campaign_id=campaign_id,
         event=event_info,
@@ -173,7 +163,6 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             "recommended_lead_days": recommended_lead_days,
             "venue_booking_risk": risk,
             "venue_booking_note": risk_note,
-            "catering_suggestions": catering  # <-- NEW
         }
     )
     return out
@@ -185,14 +174,9 @@ class VenueSelection(BaseModel):
     venue_name: str
     venue_data: dict  # Full venue object from suggestions
 
-class CateringSelection(BaseModel):
-    caterer_name: str
-    catering_data: dict  # Full catering object from suggestions
-
 class UpdateCostsRequest(BaseModel):
     concept_id: str
     venue_selection: Optional[VenueSelection] = None
-    catering_selection: Optional[CateringSelection] = None
     attendees: int
     total_budget_lkr: int
 
@@ -202,7 +186,6 @@ class UpdatedCostsResponse(BaseModel):
     total_lkr: int
     cost_breakdown_notes: List[str]
     venue_cost: int
-    catering_cost: int
     savings_or_overage: int
 
 @router.post("/{campaign_id}/planner/update-costs", response_model=UpdatedCostsResponse)
@@ -211,7 +194,7 @@ def update_concept_costs(
     body: UpdateCostsRequest, 
     db: Session = Depends(get_db)
 ):
-    """Update concept costs based on specific venue and catering selections"""
+    """Update concept costs based on venue selections and attendee adjustments."""
     
     # Verify campaign exists
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
@@ -219,14 +202,11 @@ def update_concept_costs(
         raise HTTPException(status_code=404, detail="Campaign not found")
     
     venue_data = body.venue_selection.venue_data if body.venue_selection else None
-    catering_data = body.catering_selection.catering_data if body.catering_selection else None
-    
     # Generate dynamic costs
     cost_pairs = generate_dynamic_costs(
         total_budget_lkr=body.total_budget_lkr,
         concept_id=body.concept_id,
         venue_data=venue_data,
-        catering_data=catering_data,
         attendees=body.attendees
     )
     
@@ -235,8 +215,6 @@ def update_concept_costs(
     
     # Calculate individual costs for transparency
     venue_cost = next((c.amount_lkr for c in costs if c.category == "venue"), 0)
-    catering_cost = next((c.amount_lkr for c in costs if c.category == "catering"), 0)
-    
     # Calculate savings or overage
     savings_or_overage = body.total_budget_lkr - total
     
@@ -244,9 +222,6 @@ def update_concept_costs(
     notes = []
     if venue_data:
         notes.append(f"Venue: {venue_data.get('name', 'Selected venue')} - LKR {venue_cost:,}")
-    if catering_data:
-        notes.append(f"Catering: {catering_data.get('name', 'Selected caterer')} - LKR {catering_cost:,}")
-    
     if savings_or_overage > 0:
         notes.append(f"Under budget by LKR {savings_or_overage:,}")
     elif savings_or_overage < 0:
@@ -260,6 +235,5 @@ def update_concept_costs(
         total_lkr=total,
         cost_breakdown_notes=notes,
         venue_cost=venue_cost,
-        catering_cost=catering_cost,
         savings_or_overage=savings_or_overage
     )

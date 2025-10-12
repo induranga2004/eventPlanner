@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test the new enhanced concept system with venue and catering selection
+Test the enhanced concept system with venue intelligence.
 """
 import requests
 import json
@@ -76,24 +76,8 @@ def test_enhanced_concepts():
             print(f"      Rating: {venue.get('rating', 'N/A')}")
             print(f"      Cost: LKR {venue.get('avg_cost_lkr', 'TBD'):,}" if venue.get('avg_cost_lkr') else "      Cost: TBD")
         
-        # 4. Show catering suggestions
-        if plan_data["derived"].get("catering_suggestions"):
-            catering = plan_data["derived"]["catering_suggestions"]
-            print(f"\n4. Catering Options:")
-            
-            if catering.get("inhouse"):
-                inhouse = catering["inhouse"]
-                print(f"   🏨 In-house: {inhouse.get('name', 'Venue Catering')}")
-                print(f"      Cost: LKR {inhouse.get('pp_lkr', 'TBD'):,} per person")
-            
-            if catering.get("external_options"):
-                print(f"   🍽️ External Caterers:")
-                for caterer in catering["external_options"][:2]:
-                    print(f"      • {caterer.get('name', 'Unknown')}")
-                    print(f"        Range: LKR {caterer.get('pp_min_lkr', 0):,} - {caterer.get('pp_max_lkr', 0):,} per person")
-        
-        # 5. Test dynamic pricing
-        print(f"\n5. Testing Dynamic Pricing...")
+        # 4. Test dynamic pricing
+        print(f"\n4. Testing Dynamic Pricing...")
         if plan_data["derived"]["suggested_venues"] and plan_data["concepts"]:
             selected_venue = plan_data["derived"]["suggested_venues"][0]
             selected_concept = plan_data["concepts"][0]
@@ -121,7 +105,6 @@ def test_enhanced_concepts():
                 print(f"   ✅ Updated costs for concept {updated['concept_id']}:")
                 print(f"      New total: LKR {updated['total_lkr']:,}")
                 print(f"      Venue cost: LKR {updated['venue_cost']:,}")
-                print(f"      Catering cost: LKR {updated['catering_cost']:,}")
                 
                 if updated['savings_or_overage'] > 0:
                     print(f"      💰 Under budget by: LKR {updated['savings_or_overage']:,}")
@@ -138,11 +121,11 @@ def test_enhanced_concepts():
         print(f"\n🎉 Enhanced concept system test completed!")
         print(f"📊 Key Features Demonstrated:")
         print(f"   ✅ 4 Unique concept themes (not just budget variations)")
-        print(f"   ✅ Venue and catering suggestions")
+        print(f"   ✅ Venue insights with dynamic lead-time adjustments")
         print(f"   ✅ Dynamic pricing based on selections")
         print(f"   ✅ Real-time cost adjustments")
         print(f"   ✅ Budget tracking and overages")
-        
+
     except requests.exceptions.ConnectionError:
         print("❌ Connection failed. Make sure the server is running on port 1800")
     except Exception as e:

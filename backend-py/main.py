@@ -13,7 +13,6 @@ from config.database import engine, get_db, Base
 from models.campaign import Campaign
 from routers.planner import router as planner_router
 from routers.venues import router as venues_router
-from routers.catering import router as catering_router  # <-- add catering route
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,9 @@ load_dotenv()
 
 # Check for OpenAI API key (used by the CrewAI content demo and OpenAI-powered tools)
 if not os.getenv("OPENAI_API_KEY"):
-    logger.warning("OPENAI_API_KEY not found; AI-powered enhancements will fall back to CSV data only.")
+    logger.warning(
+        "OPENAI_API_KEY not found; AI-powered enhancements will rely on Mongo provider data only."
+    )
 
 # --- FastAPI App ---
 app = FastAPI(
@@ -53,10 +54,6 @@ app.include_router(planner_router)
 # Venue suggestions:
 #   GET /venues/suggest?city=...&event_type?=musical&top_k=7
 app.include_router(venues_router)
-
-# Catering suggestions (OpenAI + CSV facts):
-#   GET /catering/suggest?city=...&event_type?=musical&venue=...&attendees=...
-app.include_router(catering_router)
 
 # --- Campaign Management Endpoints ---
 class CampaignCreate(BaseModel):
