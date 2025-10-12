@@ -112,7 +112,7 @@ const AITextField = styled(TextField)(() => ({
   '& .MuiInputBase-input': {
     color: '#fff',
     '&::placeholder': {
-      color: 'rgba(255, 255, 255, 0.6)',
+      color: 'rgba(255, 255, 255, 0.8)',
     }
   }
 }))
@@ -167,7 +167,7 @@ const AIButton = styled(Button)(() => ({
   },
   '&:disabled': {
     background: 'rgba(255, 255, 255, 0.1)',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
 }))
 
@@ -186,14 +186,14 @@ const FileUploadBox = styled(Box)(() => ({
   background: 'rgba(255, 255, 255, 0.1)',
   backdropFilter: 'blur(10px)',
   borderRadius: '12px',
-  border: '2px dashed rgba(255, 255, 255, 0.3)',
+  border: '2px dashed rgba(255, 255, 255, 0.5)',
   padding: '20px',
   textAlign: 'center',
   margin: '10px 0',
   transition: 'all 0.3s ease',
   '&:hover': {
     background: 'rgba(255, 255, 255, 0.15)',
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.7)',
   },
   '& input[type="file"]': {
     color: '#fff',
@@ -285,10 +285,10 @@ export default function SoundsRegistration() {
     <BackgroundContainer>
       {/* Floating sound wave icons */}
       <FloatingIcon sx={{ position: 'absolute', top: '15%', left: '10%' }}>
-        <VolumeUpIcon sx={{ fontSize: '60px', color: 'rgba(255,255,255,0.3)' }} />
+        <VolumeUpIcon sx={{ fontSize: '60px', color: 'rgba(255,255,255,0.5)' }} />
       </FloatingIcon>
       <FloatingIcon sx={{ position: 'absolute', bottom: '20%', left: '20%' }}>
-        <VolumeUpIcon sx={{ fontSize: '55px', color: 'rgba(255,255,255,0.25)' }} />
+        <VolumeUpIcon sx={{ fontSize: '55px', color: 'rgba(255,255,255,0.45)' }} />
       </FloatingIcon>
       
       <GlassPaper>

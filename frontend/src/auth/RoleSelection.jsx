@@ -362,8 +362,8 @@ export default function RoleSelection() {
             </Typography>
             <Typography 
               variant="h5" 
-              color="text.secondary" 
               sx={{ 
+                color: 'rgba(255,255,255,0.85)',
                 mb: 4,
                 fontWeight: 500,
                 maxWidth: '600px',
@@ -437,7 +437,7 @@ export default function RoleSelection() {
           </Box>
 
           <Box textAlign="center" sx={{ mt: 4 }}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
               Already have an account?{' '}
               <Button 
                 component={Link} 

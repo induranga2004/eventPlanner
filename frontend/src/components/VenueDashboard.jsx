@@ -8,10 +8,17 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
 import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
+import StarIcon from '@mui/icons-material/Star';
+import InsightsIcon from '@mui/icons-material/Insights';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import LockIcon from '@mui/icons-material/Lock';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
+import ProBadge from './ProBadge';
+import UpgradeModal from './UpgradeModal';
 import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription, useProAccess } from '../hooks/useSubscription';
 
 // AI-themed animations for venue
 const float = keyframes`
@@ -146,9 +153,20 @@ const Sparkline = ({ values = [], color = '#2e7d32', width = 100, height = 28 })
 const VenueDashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [requestedFeature, setRequestedFeature] = useState('');
   
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const { isPro, subscription } = useSubscription();
+  const { hasProAccess } = useProAccess();
+
+  const handleProFeatureClick = (featureName) => {
+    if (!isPro) {
+      setRequestedFeature(featureName);
+      setUpgradeModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -197,7 +215,12 @@ const VenueDashboard = () => {
   <DashboardLayout title="Venue Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="venue"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         {/* Profile header with banner */}
-        <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden' }}>
+        <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden', position: 'relative' }}>
+          <ProBadge 
+            variant={isPro ? "pro" : undefined}
+            size="large"
+            style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}
+          />
           <Box sx={{ height: 160, background: 'linear-gradient(90deg,#11998e,#38ef7d)', position: 'relative' }} />
           <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, mt: -8 }}>
             <Avatar sx={{ width: 96, height: 96, border: '4px solid white', bgcolor: 'success.main' }}>
@@ -207,13 +230,27 @@ const VenueDashboard = () => {
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography variant="h5">{user.name}</Typography>
-                  <Typography variant="body2" color="text.secondary">{user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>{user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}</Typography>
                 </Box>
-                <Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
                   <IconButton color="primary" onClick={() => navigate('/me')}><EditIcon /></IconButton>
+                  {!isPro && (
+                    <Button 
+                      variant="contained"
+                      onClick={() => setUpgradeModalOpen(true)}
+                      sx={{ 
+                        background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.8) 0%, rgba(255, 165, 0, 0.8) 100%)',
+                        color: '#000',
+                        '&:hover': { background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.9) 0%, rgba(255, 165, 0, 0.9) 100%)' }
+                      }}
+                    >
+                      <StarIcon sx={{ mr: 1 }} />
+                      Upgrade to Pro
+                    </Button>
+                  )}
                 </Box>
               </Box>
-              {user.venueAddress && (<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{user.venueAddress}</Typography>)}
+              {user.venueAddress && (<Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mt: 1 }}>{user.venueAddress}</Typography>)}
             </Box>
           </Box>
         </Paper>
@@ -232,11 +269,101 @@ const VenueDashboard = () => {
             <StatCard title="Member Since" value={new Date(user.createdAt).toLocaleDateString()} />
           </Grid>
         </Grid>
+        
+        {isPro && (
+          <Paper elevation={1} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%)' }}>
+            <Typography variant="h5" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <StarIcon sx={{ color: '#FFD700' }} />
+              Pro Analytics
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%)' }}>
+                  <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                    1,247
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                    Profile Views This Month
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #81C784 0%, #66BB6A 100%)' }}>
+                  <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                    34
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                    Event Bookings This Month
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #FFB74D 0%, #FFA726 100%)' }}>
+                  <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                    $8,750
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                    Revenue This Month
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Paper>
+        )}
+
         {message && (
           <Alert severity={message.includes('success') ? 'success' : 'error'} sx={{ mb: 2 }}>
             {message}
           </Alert>
         )}
+        
+        <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <BusinessIcon />
+            Advanced Features
+            {!isPro && (
+              <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.6)', ml: 1 }}>
+                (Pro Only)
+              </Typography>
+            )}
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Button 
+                fullWidth
+                variant="outlined"
+                onClick={() => isPro ? navigate('/advanced-analytics') : handleProFeatureClick('Advanced Analytics')}
+                sx={{ 
+                  opacity: isPro ? 1 : 0.6,
+                  filter: isPro ? 'none' : 'grayscale(50%)',
+                  minHeight: 60
+                }}
+              >
+                <InsightsIcon sx={{ mr: 1 }} />
+                Advanced Analytics
+                {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Button 
+                fullWidth
+                variant="outlined"
+                onClick={() => isPro ? navigate('/priority-support') : handleProFeatureClick('Priority Support')}
+                sx={{ 
+                  opacity: isPro ? 1 : 0.6,
+                  filter: isPro ? 'none' : 'grayscale(50%)',
+                  minHeight: 60
+                }}
+              >
+                <SupportAgentIcon sx={{ mr: 1 }} />
+                Priority Support
+                {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
+        
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Paper elevation={1} sx={{ p: 3 }}>
@@ -244,27 +371,27 @@ const VenueDashboard = () => {
                 Personal Information
               </Typography>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                   Email
                 </Typography>
                 <Typography variant="body1">{user.email}</Typography>
               </Box>
               {user.phone && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                     Phone
                   </Typography>
                   <Typography variant="body1">{user.phone}</Typography>
                 </Box>
               )}
               <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                   Role
                 </Typography>
-                <Chip label={user.role} color="success" size="small" />
+                <Chip label={user.role || 'Venue'} color="success" size="small" />
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                   Member Since
                 </Typography>
                 <Typography variant="body1">
@@ -281,7 +408,7 @@ const VenueDashboard = () => {
               </Typography>
               {user.venueAddress && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                     Venue Address
                   </Typography>
                   <Typography variant="body1">{user.venueAddress}</Typography>
@@ -289,7 +416,7 @@ const VenueDashboard = () => {
               )}
               {user.capacity && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                     Capacity
                   </Typography>
                   <Typography variant="body1">{user.capacity} people</Typography>
@@ -297,7 +424,7 @@ const VenueDashboard = () => {
               )}
               {(user.photo || user.additionalPhoto) && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                     Photos
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -325,11 +452,11 @@ const VenueDashboard = () => {
             <Paper elevation={1} sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>Contact & Bookings</Typography>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Contact</Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Contact</Typography>
                 <Typography variant="body1">{user.phone || 'Not provided'}</Typography>
               </Box>
               <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Capacity</Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Capacity</Typography>
                 <Typography variant="body1">{user.capacity || '—'} people</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -438,6 +565,12 @@ const VenueDashboard = () => {
           </Grid>
         </Grid>
       </Container>
+
+      <UpgradeModal 
+        open={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        requestedFeature={requestedFeature}
+      />
     </DashboardLayout>
   );
 };

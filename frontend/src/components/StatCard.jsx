@@ -100,7 +100,7 @@ export default function StatCard({ title, value, subtitle, icon, color = 'primar
           <Typography 
             variant="overline" 
             sx={{ 
-              color: 'rgba(255,255,255,0.7)', 
+              color: 'rgba(255,255,255,0.9)', 
               fontWeight: 600,
               letterSpacing: '1px',
               textTransform: 'uppercase',
@@ -115,7 +115,7 @@ export default function StatCard({ title, value, subtitle, icon, color = 'primar
             <Typography 
               variant="caption" 
               sx={{ 
-                color: 'rgba(255,255,255,0.6)',
+                color: 'rgba(255,255,255,0.85)',
                 fontWeight: 500,
               }}
             >

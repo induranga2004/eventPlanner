@@ -38,11 +38,11 @@ const pulse = keyframes`
 const AIBackgroundContainer = styled(Box)(({ theme, role }) => {
   const roleGradients = {
     'user': 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
-    'musician': 'linear-gradient(-45deg, #1e3c72 0%, #2a5298 25%, #8e44ad 50%, #c0392b 75%, #27ae60 100%)', 
-    'venue': 'linear-gradient(-45deg, #16a085 0%, #f39c12 25%, #27ae60 50%, #e67e22 75%, #2ecc71 100%)',
-    'lights': 'linear-gradient(-45deg, #e74c3c 0%, #f39c12 25%, #e67e22 50%, #d35400 75%, #c0392b 100%)',
-    'musicband': 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #667eea 75%, #764ba2 100%)',
-    'sounds': 'linear-gradient(-45deg, #4facfe 0%, #00f2fe 25%, #4facfe 50%, #00f2fe 75%, #4facfe 100%)',
+    'musician': 'linear-gradient(-45deg, #1e3c72 0%, #3b82f6 25%, #8b5cf6 50%, #ef4444 75%, #10b981 100%)', 
+    'venue': 'linear-gradient(-45deg, #059669 0%, #f59e0b 25%, #22c55e 50%, #ea580c 75%, #16a34a 100%)',
+    'lights': 'linear-gradient(-45deg, #dc2626 0%, #f59e0b 25%, #ea580c 50%, #dc2626 75%, #b91c1c 100%)',
+    'musicband': 'linear-gradient(-45deg, #667eea 0%, #8b5cf6 25%, #f093fb 50%, #667eea 75%, #764ba2 100%)',
+    'sounds': 'linear-gradient(-45deg, #0ea5e9 0%, #06b6d4 25%, #0ea5e9 50%, #06b6d4 75%, #0284c7 100%)',
     'default': 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)'
   }
   
@@ -299,7 +299,7 @@ export default function DashboardLayout({ title = 'Dashboard', navItems = [], ch
               <Typography 
                 variant="caption" 
                 sx={{ 
-                  color: 'rgba(255,255,255,0.7)',
+                  color: 'rgba(255,255,255,0.9)',
                   fontWeight: 500,
                   textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                 }}

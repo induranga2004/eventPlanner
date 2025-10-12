@@ -102,7 +102,7 @@ const AITextField = styled(TextField)(() => ({
     },
   },
   '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.9)',
     '&.Mui-focused': {
       color: '#fff',
     },
@@ -110,7 +110,7 @@ const AITextField = styled(TextField)(() => ({
   '& .MuiOutlinedInput-input': {
     color: '#fff',
     '&::placeholder': {
-      color: 'rgba(255, 255, 255, 0.5)',
+      color: 'rgba(255, 255, 255, 0.7)',
     },
   },
   '& .MuiInputLabel-shrink': {
@@ -136,7 +136,7 @@ const AIButton = styled(Button)(() => ({
   },
   '&:disabled': {
     background: 'rgba(255, 255, 255, 0.1)',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
 }))
 
@@ -155,14 +155,14 @@ const FileUploadBox = styled(Box)(() => ({
   background: 'rgba(255, 255, 255, 0.1)',
   backdropFilter: 'blur(10px)',
   borderRadius: '12px',
-  border: '2px dashed rgba(255, 255, 255, 0.3)',
+  border: '2px dashed rgba(255, 255, 255, 0.5)',
   padding: '20px',
   textAlign: 'center',
   margin: '10px 0',
   transition: 'all 0.3s ease',
   '&:hover': {
     background: 'rgba(255, 255, 255, 0.15)',
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.7)',
   },
   '& input[type="file"]': {
     color: '#fff',

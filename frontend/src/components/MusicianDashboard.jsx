@@ -8,10 +8,17 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import AlbumIcon from '@mui/icons-material/Album';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
+import StarIcon from '@mui/icons-material/Star';
+import InsightsIcon from '@mui/icons-material/Insights';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import LockIcon from '@mui/icons-material/Lock';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
+import ProBadge from './ProBadge';
+import UpgradeModal from './UpgradeModal';
 import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription, useProAccess } from '../hooks/useSubscription';
 
 // AI-themed animations
 const float = keyframes`
@@ -162,9 +169,20 @@ const Sparkline = ({ values = [], color = '#1976d2', width = 100, height = 28 })
 const MusicianDashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [requestedFeature, setRequestedFeature] = useState('');
   
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const { isPro, subscription } = useSubscription();
+  const { hasProAccess } = useProAccess();
+
+  const handleProFeatureClick = (featureName) => {
+    if (!isPro) {
+      setRequestedFeature(featureName);
+      setUpgradeModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -231,6 +249,11 @@ const MusicianDashboard = () => {
           </Box>
           
           <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3, mt: -4 }}>
+            <ProBadge 
+              variant={isPro ? "pro" : undefined}
+              size="large"
+              style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}
+            />
             <Avatar 
               sx={{ 
                 width: 100, 
@@ -275,6 +298,19 @@ const MusicianDashboard = () => {
                   <EditIcon sx={{ mr: 1 }} />
                   Edit Profile
                 </AIButton>
+                {!isPro && (
+                  <AIButton 
+                    onClick={() => setUpgradeModalOpen(true)}
+                    sx={{ 
+                      background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 165, 0, 0.3) 100%)',
+                      border: '1px solid rgba(255, 215, 0, 0.5)',
+                      '&:hover': { background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.4) 0%, rgba(255, 165, 0, 0.4) 100%)' }
+                    }}
+                  >
+                    <StarIcon sx={{ mr: 1 }} />
+                    Upgrade to Pro
+                  </AIButton>
+                )}
               </Box>
             </Box>
           </Box>
@@ -311,7 +347,7 @@ const MusicianDashboard = () => {
                 <GradientText variant="h6">Recent Activity</GradientText>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
                   Plays & Engagement
                 </Typography>
                 <Sparkline values={[5,7,6,10,9,12,15,11,13,16,14]} />
@@ -329,29 +365,29 @@ const MusicianDashboard = () => {
               </Box>
               
               <InfoBox>
-                <MusicNoteIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <MusicNoteIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
                 <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Email</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Email</Typography>
                   <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.email}</Typography>
                 </Box>
               </InfoBox>
 
               {user.phone && (
                 <InfoBox>
-                  <AudiotrackIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                  <AudiotrackIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
                   <Box>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Phone</Typography>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Phone</Typography>
                     <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.phone}</Typography>
                   </Box>
                 </InfoBox>
               )}
 
               <InfoBox>
-                <AlbumIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <AlbumIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
                 <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Role</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Role</Typography>
                   <Chip 
-                    label={user.role} 
+                    label={user.role || 'Musician'} 
                     sx={{ 
                       background: 'linear-gradient(135deg, #3498db 0%, #9b59b6 100%)',
                       color: '#fff',
@@ -364,9 +400,9 @@ const MusicianDashboard = () => {
               </InfoBox>
 
               <InfoBox>
-                <CalendarTodayIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <CalendarTodayIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
                 <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Member Since</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Member Since</Typography>
                   <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>
                     {new Date(user.createdAt).toLocaleDateString()}
                   </Typography>
@@ -402,28 +438,28 @@ const MusicianDashboard = () => {
                 <Box sx={{ 
                   width: 160, 
                   height: 100, 
-                  background: 'rgba(255,255,255,0.1)', 
+                  background: 'rgba(255,255,255,0.15)', 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center', 
                   borderRadius: '12px',
-                  border: '2px dashed rgba(255,255,255,0.3)',
+                  border: '2px dashed rgba(255,255,255,0.5)',
                   transition: 'all 0.3s ease',
                   '&:hover': {
-                    background: 'rgba(255,255,255,0.2)',
-                    borderColor: 'rgba(255,255,255,0.5)',
+                    background: 'rgba(255,255,255,0.25)',
+                    borderColor: 'rgba(255,255,255,0.7)',
                   }
                 }}>
-                  <PhotoLibraryIcon sx={{ color: 'rgba(255,255,255,0.6)' }} />
+                  <PhotoLibraryIcon sx={{ color: 'rgba(255,255,255,0.8)' }} />
                 </Box>
               </PhotoGallery>
               
               {user.spotifyLink && (
                 <Box sx={{ mt: 3 }}>
                   <InfoBox>
-                    <AudiotrackIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                    <AudiotrackIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
                     <Box>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                         Spotify Profile
                       </Typography>
                       <Link href={user.spotifyLink} target="_blank" rel="noopener" sx={{ color: '#fff' }}>
@@ -446,9 +482,9 @@ const MusicianDashboard = () => {
               </Box>
               
               <InfoBox>
-                <MusicNoteIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                <MusicNoteIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
                 <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Contact</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Contact</Typography>
                   <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>
                     {user.phone || 'Not provided'}
                   </Typography>
@@ -456,7 +492,7 @@ const MusicianDashboard = () => {
               </InfoBox>
               
               <Box sx={{ mt: 3 }}>
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>Booking Link</Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mb: 2 }}>Booking Link</Typography>
                 <AIButton 
                   fullWidth
                   variant="contained"
@@ -469,7 +505,7 @@ const MusicianDashboard = () => {
               </Box>
               
               <Box sx={{ mt: 3 }}>
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>Quick Actions</Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mb: 2 }}>Quick Actions</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <AIButton variant="outlined" onClick={() => navigate('/me')}>
                     <EditIcon sx={{ mr: 1 }} />
@@ -481,6 +517,94 @@ const MusicianDashboard = () => {
                   </AIButton>
                 </Box>
               </Box>
+            </GlassCard>
+          </Grid>
+
+          <Grid item xs={12}>
+            {isPro && (
+              <Grid item xs={12} sx={{ mb: 3 }}>
+                <Typography variant="h5" sx={{ color: '#fff', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <StarIcon sx={{ color: '#FFD700' }} />
+                  Pro Analytics
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={4}>
+                    <GlassCard elevation={0} sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h3" sx={{ color: '#4FC3F7', fontWeight: 'bold' }}>
+                        247
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                        Total Views This Month
+                      </Typography>
+                    </GlassCard>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <GlassCard elevation={0} sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h3" sx={{ color: '#81C784', fontWeight: 'bold' }}>
+                        12
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                        Bookings This Month
+                      </Typography>
+                    </GlassCard>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <GlassCard elevation={0} sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h3" sx={{ color: '#FFB74D', fontWeight: 'bold' }}>
+                        $2,450
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                        Revenue This Month
+                      </Typography>
+                    </GlassCard>
+                  </Grid>
+                </Grid>
+              </Grid>
+            )}
+            
+            <GlassCard elevation={0} sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
+                  <MusicNoteIcon sx={{ color: '#fff' }} />
+                </FloatingMusicIcon>
+                <GradientText variant="h6">Advanced Features</GradientText>
+                {!isPro && (
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', ml: 1 }}>
+                    (Pro Only)
+                  </Typography>
+                )}
+              </Box>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <AIButton 
+                    fullWidth
+                    onClick={() => isPro ? navigate('/analytics') : handleProFeatureClick('Analytics Dashboard')}
+                    sx={{ 
+                      opacity: isPro ? 1 : 0.6,
+                      filter: isPro ? 'none' : 'grayscale(50%)'
+                    }}
+                  >
+                    <InsightsIcon sx={{ mr: 1 }} />
+                    Advanced Analytics
+                    {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
+                  </AIButton>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <AIButton 
+                    fullWidth
+                    onClick={() => isPro ? navigate('/priority-support') : handleProFeatureClick('Priority Support')}
+                    sx={{ 
+                      opacity: isPro ? 1 : 0.6,
+                      filter: isPro ? 'none' : 'grayscale(50%)'
+                    }}
+                  >
+                    <SupportAgentIcon sx={{ mr: 1 }} />
+                    Priority Support
+                    {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
+                  </AIButton>
+                </Grid>
+              </Grid>
             </GlassCard>
           </Grid>
 
@@ -573,6 +697,12 @@ const MusicianDashboard = () => {
           </Grid>
         </Grid>
       </Container>
+
+      <UpgradeModal 
+        open={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        requestedFeature={requestedFeature}
+      />
     </DashboardLayout>
   );
 };

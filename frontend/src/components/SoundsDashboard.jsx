@@ -3,12 +3,19 @@ import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Fade } f
 import { styled, keyframes } from '@mui/material/styles';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
+import ProBadge from './ProBadge';
+import UpgradeModal from './UpgradeModal';
 import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription, useProAccess } from '../hooks/useSubscription';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import MicIcon from '@mui/icons-material/Mic';
 import SpeakerIcon from '@mui/icons-material/Speaker';
+import StarIcon from '@mui/icons-material/Star';
+import InsightsIcon from '@mui/icons-material/Insights';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import LockIcon from '@mui/icons-material/Lock';
 
 // AI-themed animations for sounds
 const float = keyframes`

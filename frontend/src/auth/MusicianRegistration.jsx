@@ -39,9 +39,9 @@ const FloatingIcon = styled(Box)(({ size = '60px', top, bottom, left, right, dur
   right,
   fontSize: size,
   animation: `${float} ${duration} ease-in-out infinite`,
-  opacity: 0.4,
+  opacity: 0.6,
   pointerEvents: 'none',
-  color: 'rgba(255, 255, 255, 0.6)',
+  color: 'rgba(255, 255, 255, 0.8)',
 }));
 
 const GlassPaper = styled(Box)(({ theme }) => ({

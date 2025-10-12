@@ -3,11 +3,18 @@ import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Fade } f
 import { styled, keyframes } from '@mui/material/styles';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
+import ProBadge from './ProBadge';
+import UpgradeModal from './UpgradeModal';
 import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription, useProAccess } from '../hooks/useSubscription';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import FlashlightOnIcon from '@mui/icons-material/FlashlightOn';
 import PersonIcon from '@mui/icons-material/Person';
+import StarIcon from '@mui/icons-material/Star';
+import InsightsIcon from '@mui/icons-material/Insights';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import LockIcon from '@mui/icons-material/Lock';
 
 // AI-themed animations for lighting
 const float = keyframes`
@@ -125,7 +132,18 @@ export default function LightsDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [requestedFeature, setRequestedFeature] = useState('');
   const navigate = useNavigate();
+  const { isPro, subscription } = useSubscription();
+  const { hasProAccess } = useProAccess();
+
+  const handleProFeatureClick = (featureName) => {
+    if (!isPro) {
+      setRequestedFeature(featureName);
+      setUpgradeModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     (async () => {

@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
@@ -22,6 +22,8 @@ app.get('/api/health', (req, res) => {
 // routes
 app.use('/api/auth', require('./src/auth/auth.routes'));
 app.use('/api/2fa', require('./src/routes/twoFactor'));
+app.use('/api/subscription', require('./src/routes/subscription'));
+app.use('/api/test', require('./src/routes/test'));
 app.use('/api', require('./src/auth/protected.routes'));
 
 // 404 for other /api routes

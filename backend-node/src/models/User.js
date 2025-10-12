@@ -15,6 +15,37 @@ const userSchema = new mongoose.Schema({
   lastTOTPToken: { type: String }, // Store last used token for replay prevention
   twoFactorSetupDate: { type: Date },
   
+  // Subscription and Pro features
+  subscriptionPlan: {
+    type: String,
+    enum: ['free', 'pro'],
+    default: 'free'
+  },
+  subscriptionStatus: {
+    type: String,
+    enum: ['active', 'cancelled', 'expired'],
+    default: 'active'
+  },
+  subscriptionExpiry: { type: Date },
+  proFeatures: {
+    unlimitedEvents: { type: Boolean, default: false },
+    advancedAnalytics: { type: Boolean, default: false },
+    prioritySupport: { type: Boolean, default: false },
+    customBranding: { type: Boolean, default: false },
+    apiAccess: { type: Boolean, default: false },
+    verifiedBadge: { type: Boolean, default: false }
+  },
+  // Payment related
+  stripeCustomerId: { type: String },
+  stripeSubscriptionId: { type: String },
+  paymentHistory: [{
+    amount: { type: Number },
+    currency: { type: String, default: 'usd' },
+    date: { type: Date, default: Date.now },
+    status: { type: String },
+    invoiceId: { type: String }
+  }],
+  
   // Additional fields for musicians
   photo: { type: String },
   spotifyLink: { type: String },
