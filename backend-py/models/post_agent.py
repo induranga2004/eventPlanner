@@ -85,6 +85,7 @@ def _share_mastodon(image_url, caption):
     # 2) Upload media (try v2, fallback to v1 for compatibility)
     media_id = None
     media_error = None
+    media_auth_unauthorized = False
     for media_endpoint in ("/api/v2/media", "/api/v1/media"):
         media_url = f"{base}{media_endpoint}"
         media_res = requests.post(media_url, headers=headers, files=files, data={"description": caption[:420]})
@@ -97,16 +98,25 @@ def _share_mastodon(image_url, caption):
             except Exception:
                 media_error = {"status_code": media_res.status_code, "text": media_res.text}
             if media_res.status_code == 401:
-                raise requests.HTTPError(
-                    f"Mastodon auth failed (401) when uploading media. Check MASTODON_BASE_URL matches your instance and token has write:media scope.",
-                    response=media_res,
-                )
+                # Token likely missing write:media or instance mismatch. Try status-only fallback.
+                media_auth_unauthorized = True
+                break
     if not media_id:
         # Post caption-only (no path/URL) and surface the upload error in response for quick fixes
         status_url = f"{base}/api/v1/statuses"
         res = requests.post(status_url, headers=headers, data={"status": caption})
+        if res.ok:
+            warning = "media_upload_unauthorized" if media_auth_unauthorized else "media_upload_failed"
+            return {"warning": warning, "media_error": media_error, **res.json()}
+        # Status-only also failed — raise a targeted error if we previously saw 401 on media
+        if media_auth_unauthorized and res.status_code == 401:
+            raise requests.HTTPError(
+                "Mastodon auth failed (401) for both media upload and status post. Ensure token is for the same instance and includes write:statuses and write:media.",
+                response=res,
+            )
+        # Otherwise bubble up the status error
         res.raise_for_status()
-        return {"warning": "media_upload_failed", "media_error": media_error, **res.json()}
+        return res.json()
 
     # 3) Create status with attached media
     status_url = f"{base}/api/v1/statuses"

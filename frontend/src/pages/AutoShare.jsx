@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Box, Container, Paper, Typography, TextField, Grid, Button, Stack,
   Alert, Snackbar, CircularProgress, Divider, InputAdornment
@@ -6,7 +6,7 @@ import {
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import ImageIcon from '@mui/icons-material/Image'
 import SaveIcon from '@mui/icons-material/Save'
-import { autoShare } from '../api/events'
+import { autoShare, getLatestEvent } from '../api/events'
 
 export default function AutoShare() {
   const [form, setForm] = useState({
@@ -27,6 +27,34 @@ export default function AutoShare() {
   const onChange = (e) => {
     setForm((s) => ({ ...s, [e.target.name]: e.target.value }))
   }
+
+  // Prefill the form with the latest event saved in MongoDB (if available)
+  // This runs only once on mount and won't override any user edits afterward.
+  useEffect(() => {
+    (async () => {
+      try {
+        const latest = await getLatestEvent()
+        if (latest) {
+          setForm((s) => {
+            // Only fill fields that are currently empty to avoid clobbering preset values
+            const next = { ...s }
+            const fields = ['name', 'date', 'venue', 'price', 'audience', 'photoUrl']
+            let changed = false
+            for (const f of fields) {
+              if (!String(next[f] || '').trim() && typeof latest[f] === 'string' && latest[f].trim()) {
+                next[f] = latest[f]
+                changed = true
+              }
+            }
+            if (changed) setToast('Loaded latest saved event')
+            return next
+          })
+        }
+      } catch (_e) {
+        // Ignore errors (e.g., NO_DB_SAVE or backend not available)
+      }
+    })()
+  }, [])
 
   const validate = () => {
     const required = ['name', 'date', 'venue', 'price', 'audience', 'photoUrl']

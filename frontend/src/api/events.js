@@ -17,3 +17,10 @@ export async function autoShare(payload) {
   const { data } = await api.post(buildPath('/auto-share'), payload)
   return data
 }
+
+// Fetch the most recent saved event (if any). Returns the first item or null.
+export async function getLatestEvent() {
+  const { data } = await api.get(buildPath('/events'))
+  const items = Array.isArray(data?.items) ? data.items : []
+  return items.length > 0 ? items[0] : null
+}

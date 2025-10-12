@@ -6,6 +6,8 @@ from models.caption_agent import generate_captions
 from models.post_agent import share_post
 from models.analytics_agent import fetch_post_metrics
 from config.scheduler import schedule_job
+from config.config import MASTODON_BASE_URL, MASTODON_ACCESS_TOKEN
+import requests
 
 
 app = FastAPI()
@@ -80,5 +82,21 @@ def auto_share(input: AutoShareInput):
         caption = captions.get("instagram", "Enjoy the event!")
         result = share_post(input.photo_url, caption)
         return {"caption": caption, "post_result": result}
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+@app.get("/mastodon/verify")
+def mastodon_verify():
+    try:
+        base = (MASTODON_BASE_URL or "").strip().rstrip('/')
+        token = (MASTODON_ACCESS_TOKEN or "").strip()
+        if not base or not token:
+            return JSONResponse(status_code=400, content={"error": "Missing MASTODON_BASE_URL or MASTODON_ACCESS_TOKEN"})
+        url = f"{base}/api/v1/accounts/verify_credentials"
+        resp = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=15)
+        if not resp.ok:
+            return JSONResponse(status_code=resp.status_code, content={"error": resp.text})
+        data = resp.json()
+        return {"ok": True, "instance": base, "account": {"id": data.get("id"), "username": data.get("username"), "acct": data.get("acct")}}
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
