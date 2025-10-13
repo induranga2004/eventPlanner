@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Fade } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
+import { motion } from 'motion/react';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
 import ProBadge from './ProBadge';
@@ -16,113 +17,63 @@ import InsightsIcon from '@mui/icons-material/Insights';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import LockIcon from '@mui/icons-material/Lock';
 
-// AI-themed animations for lighting
-const float = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-`
+// Create Motion components
+const MotionPaper = motion.create(Paper);
+const MotionBox = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`
-
-const lightPulse = keyframes`
-  0%, 100% { opacity: 0.8; transform: scale(1); box-shadow: 0 0 20px rgba(255, 142, 83, 0.4); }
-  50% { opacity: 1; transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 142, 83, 0.8), 0 0 40px rgba(255, 210, 63, 0.6); }
-`
-
-// AI-themed styled components for lighting (orange theme)
-const LightsProfileCard = styled(Paper)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+// Color Hunt styled components
+const ProfileCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '20px',
+  color: '#F9DBBA',
   overflow: 'hidden',
   position: 'relative',
-  animation: `${float} 6s ease-in-out infinite`,
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(-45deg, rgba(255, 142, 83, 0.3) 0%, rgba(255, 107, 53, 0.3) 25%, rgba(247, 147, 30, 0.3) 50%, rgba(255, 210, 63, 0.3) 75%, rgba(255, 142, 83, 0.3) 100%)',
-    backgroundSize: '400% 400%',
-    animation: `${gradientShift} 10s ease infinite`,
-    zIndex: -1,
-  }
-}))
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+}));
 
-const GlassCard = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+const InfoCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '16px',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.15)',
-    transform: 'translateY(-5px)',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-  }
-}))
+  color: '#F9DBBA',
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+}));
 
-const FloatingLightIcon = styled(Box)(({ theme }) => ({
-  animation: `${lightPulse} 3s ease-in-out infinite`,
+const LightsIconBox = styled(MotionBox)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
+  background: 'rgba(91, 153, 194, 0.2)',
   borderRadius: '12px',
-  border: '1px solid rgba(255,255,255,0.3)',
-  backdropFilter: 'blur(10px)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.1)',
-    boxShadow: '0 15px 30px rgba(255, 142, 83, 0.6)',
-  }
-}))
+  border: '1px solid rgba(91, 153, 194, 0.4)',
+}));
 
-const AIButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
-  color: '#fff',
-  border: '1px solid rgba(255, 255, 255, 0.3)',
+const ActionButton = styled(Button)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+  color: '#F9DBBA',
+  border: '1px solid rgba(91, 153, 194, 0.4)',
   borderRadius: '12px',
-  backdropFilter: 'blur(10px)',
   fontWeight: 600,
   textTransform: 'none',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.2) 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-  },
-  '&.MuiButton-contained': {
-    background: 'linear-gradient(135deg, #FF8E53 0%, #FFD23F 100%)',
-    color: '#fff',
+  padding: '10px 24px',
+  '&.MuiButton-outlined': {
+    background: 'transparent',
+    border: '1px solid rgba(91, 153, 194, 0.5)',
     '&:hover': {
-      background: 'linear-gradient(135deg, #FFD23F 0%, #FF8E53 100%)',
+      background: 'rgba(91, 153, 194, 0.15)',
+      border: '1px solid #5B99C2',
     }
   }
-}))
-
-const GradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-  fontWeight: 700,
-  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-}))
+}));
 
 const InfoBox = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
   padding: '12px 0',
-  borderBottom: '1px solid rgba(255,255,255,0.1)',
+  borderBottom: '1px solid rgba(91, 153, 194, 0.2)',
   '&:last-child': {
     borderBottom: 'none',
   }
@@ -176,52 +127,147 @@ export default function LightsDashboard() {
   return (
   <DashboardLayout title="Lighting Services Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="lights"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{
-          height: 140,
-          borderRadius: 2,
-          overflow: 'hidden',
-          mb: 3,
-          background: 'linear-gradient(120deg, rgba(245,158,11,0.95) 0%, rgba(249,115,22,0.95) 100%)',
-          color: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          p: 3,
-        }}>
-          <Avatar sx={{ width: 84, height: 84, mr: 2, bgcolor: 'warning.main' }}>{user.companyName?.charAt(0)?.toUpperCase()}</Avatar>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>{user.companyName || user.name}</Typography>
-            <Typography variant="body2">Lighting & Stage Services</Typography>
+        {/* Profile Header with Color Hunt blue gradient */}
+        <ProfileCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          sx={{ mb: 3, p: 0 }}
+        >
+          <Box sx={{
+            background: 'linear-gradient(90deg, #5B99C2, #1A4870)',
+            color: '#F9DBBA',
+            p: 3,
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 3 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Avatar 
+                sx={{ 
+                  width: 84, 
+                  height: 84, 
+                  mr: 3, 
+                  border: '3px solid rgba(91, 153, 194, 0.5)',
+                  bgcolor: '#1A4870'
+                }}
+              >
+                {user.companyName?.charAt(0)?.toUpperCase()}
+              </Avatar>
+            </motion.div>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: '#F9DBBA' }}>
+                {user.companyName || user.name}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.85)' }}>
+                Lighting & Stage Services
+              </Typography>
+            </Box>
+            <Box flex={1} />
+            <ActionButton variant="outlined">
+              Manage
+            </ActionButton>
           </Box>
-          <Box flex={1} />
-          <Button variant="contained" color="secondary">Manage</Button>
-        </Box>
+        </ProfileCard>
 
         <Fade in={mounted} timeout={420}>
           <Box>
+            {/* Stats Grid with stagger animations */}
             <Grid container spacing={3} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Leads" value="—" subtitle="This month" /></Grid>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Crew" value={user.crewSize || '—'} subtitle="Available" /></Grid>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Services" value={user.services ? 'Listed' : '—'} subtitle="Offered" /></Grid>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Since" value={new Date(user.createdAt).toLocaleDateString()} /></Grid>
+              <MotionGrid 
+                item xs={12} sm={6} md={3}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+              >
+                <StatCard title="Leads" value="—" subtitle="This month" />
+              </MotionGrid>
+              <MotionGrid 
+                item xs={12} sm={6} md={3}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+              >
+                <StatCard title="Crew" value={user.crewSize || '—'} subtitle="Available" />
+              </MotionGrid>
+              <MotionGrid 
+                item xs={12} sm={6} md={3}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              >
+                <StatCard title="Services" value={user.services ? 'Listed' : '—'} subtitle="Offered" />
+              </MotionGrid>
+              <MotionGrid 
+                item xs={12} sm={6} md={3}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+              >
+                <StatCard title="Since" value={new Date(user.createdAt).toLocaleDateString()} />
+              </MotionGrid>
             </Grid>
 
-            <Paper elevation={3} sx={{ p: 4 }}>
+            {/* Service Details with Color Hunt */}
+            <InfoCard 
+              elevation={3} 
+              sx={{ p: 4 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={1} sx={{ p: 3 }}>
-                    <Typography variant="h6">Service Details</Typography>
-                    <Typography variant="body2" color="text.secondary">Types</Typography>
-                    <Typography>{user.lightTypes || '—'}</Typography>
-                  </Paper>
+                  <InfoCard elevation={1} sx={{ p: 3 }}>
+                    <Box display="flex" alignItems="center" gap={2} mb={2}>
+                      <LightsIconBox
+                        sx={{ width: 48, height: 48 }}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: 'spring', stiffness: 300 }}
+                      >
+                        <LightbulbIcon sx={{ fontSize: 28, color: '#5B99C2' }} />
+                      </LightsIconBox>
+                      <Typography variant="h6" sx={{ color: '#F9DBBA', fontWeight: 600 }}>
+                        Service Details
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.7)', mb: 1 }}>
+                      Types
+                    </Typography>
+                    <Typography sx={{ color: '#F9DBBA', fontSize: '1.1rem', fontWeight: 500 }}>
+                      {user.lightTypes || '—'}
+                    </Typography>
+                  </InfoCard>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={1} sx={{ p: 3 }}>
-                    <Typography variant="h6">Quick Actions</Typography>
-                    <Button variant="contained" onClick={() => navigate('/me')}>Manage Equipment</Button>
-                  </Paper>
+                  <InfoCard elevation={1} sx={{ p: 3 }}>
+                    <Box display="flex" alignItems="center" gap={2} mb={2}>
+                      <LightsIconBox
+                        sx={{ width: 48, height: 48 }}
+                        whileHover={{ scale: 1.1, rotate: -5 }}
+                        transition={{ type: 'spring', stiffness: 300 }}
+                      >
+                        <FlashlightOnIcon sx={{ fontSize: 28, color: '#5B99C2' }} />
+                      </LightsIconBox>
+                      <Typography variant="h6" sx={{ color: '#F9DBBA', fontWeight: 600 }}>
+                        Quick Actions
+                      </Typography>
+                    </Box>
+                    <ActionButton 
+                      fullWidth
+                      onClick={() => navigate('/me')}
+                      component={motion.button}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Manage Equipment
+                    </ActionButton>
+                  </InfoCard>
                 </Grid>
               </Grid>
-            </Paper>
+            </InfoCard>
           </Box>
         </Fade>
       </Container>

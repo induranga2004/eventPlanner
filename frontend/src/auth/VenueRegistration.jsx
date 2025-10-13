@@ -1,96 +1,25 @@
-import * as React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Container, CssBaseline, Box, Typography, TextField, Button } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
-import { Stadium as VenueIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+﻿import * as React from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
+import StadiumRoundedIcon from '@mui/icons-material/StadiumRounded';
+import { motion } from 'motion/react';
 import { register } from '../api/auth';
+import AuthLayout from '../components/layout/AuthLayout';
+import FileUploadField from '../components/common/FileUploadField';
+import { formContainerVariants, formFieldVariants } from '../utils/motionVariants';
 
-// AI-themed styled components
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`;
-
-const float = keyframes`
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-20px) rotate(5deg); }
-  66% { transform: translateY(-10px) rotate(-5deg); }
-`;
-
-const BackgroundContainer = styled(Box)(({ theme }) => ({
-  minHeight: '100vh',
-  background: 'linear-gradient(-45deg, #4caf50, #2e7d32, #81c784, #4caf50)',
-  backgroundSize: '400% 400%',
-  animation: `${gradientShift} 15s ease infinite`,
-  position: 'relative',
-  overflow: 'hidden',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: theme.spacing(2),
-}));
-
-const FloatingIcon = styled(Box)(({ size = '60px', top, bottom, left, right, duration = '6s' }) => ({
-  position: 'absolute',
-  top,
-  bottom,
-  left,
-  right,
-  fontSize: size,
-  animation: `${float} ${duration} ease-in-out infinite`,
-  opacity: 0.6,
-  pointerEvents: 'none',
-  color: 'rgba(255, 255, 255, 0.8)',
-}));
-
-const GlassPaper = styled(Box)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(20px)',
-  borderRadius: '24px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-  padding: theme.spacing(4),
-  maxWidth: '500px',
-  width: '100%',
-  position: 'relative',
-}));
-
-const AITextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    background: 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '12px',
-    '&:hover': {
-      background: 'rgba(255, 255, 255, 0.95)',
-    },
-    '&.Mui-focused': {
-      background: 'rgba(255, 255, 255, 1)',
-      boxShadow: '0 0 20px rgba(76, 175, 80, 0.3)',
-    }
-  },
-  '& .MuiInputLabel-root': {
-    fontWeight: 600,
-  }
-}));
-
-const AIButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
-  borderRadius: '12px',
-  padding: theme.spacing(1.5, 3),
-  fontWeight: 700,
-  fontSize: '1rem',
-  textTransform: 'none',
-  boxShadow: '0 8px 25px rgba(76, 175, 80, 0.3)',
-  '&:hover': {
-    background: 'linear-gradient(135deg, #2e7d32 0%, #81c784 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 12px 30px rgba(76, 175, 80, 0.4)',
-  },
-  '&:disabled': {
-    background: 'rgba(76, 175, 80, 0.5)',
-  }
-}));
+const MotionButton = motion(Button);
 
 export default function VenueRegistration() {
   const navigate = useNavigate();
@@ -101,6 +30,7 @@ export default function VenueRegistration() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.append('role', 'venue');
+
     setLoading(true);
     setError('');
     try {
@@ -108,196 +38,280 @@ export default function VenueRegistration() {
       if (res.token) localStorage.setItem('token', res.token);
       navigate('/me');
     } catch (e) {
-      setError(e?.response?.data?.error || 'Registration failed');
+      setError(e?.response?.data?.error || 'Registration failed. Please check your details.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <BackgroundContainer>
-      <FloatingIcon size="100px" top="15%" left="10%" duration="8s">
-        <VenueIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-      <FloatingIcon size="80px" top="25%" right="15%" duration="6s">
-        <VenueIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-      <FloatingIcon size="60px" bottom="20%" left="15%" duration="7s">
-        <VenueIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-      <FloatingIcon size="90px" bottom="15%" right="20%" duration="9s">
-        <VenueIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-
-      <GlassPaper>
-        <Box textAlign="center" sx={{ mb: 4 }}>
-          <Box sx={{ mb: 2 }}>
-            <VenueIcon sx={{ 
-              fontSize: 48, 
-              color: 'white',
-              background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
-              borderRadius: '16px',
-              padding: '12px',
-              boxShadow: '0 8px 20px rgba(76, 175, 80, 0.3)'
-            }} />
-          </Box>
-          <Typography 
-            component="h1" 
-            variant="h4"
-            sx={{
-              fontWeight: 800,
-              background: 'linear-gradient(135deg, #4caf50 0%, #81c784 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              mb: 1
-            }}
-          >
-            Venue Registration
-          </Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
-            Share your amazing event spaces
-          </Typography>
-        </Box>
-
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <AITextField 
-            margin="normal" 
-            required 
-            fullWidth 
-            id="name" 
-            label="Venue Name" 
-            name="name" 
-            autoFocus 
-          />
-          <AITextField 
-            margin="normal" 
-            required 
-            fullWidth 
-            id="email" 
-            label="Email Address" 
-            name="email" 
-            autoComplete="email" 
-          />
-          <AITextField 
-            margin="normal" 
-            required 
-            fullWidth 
-            name="password" 
-            label="Password" 
-            type="password" 
-            id="password" 
-            autoComplete="new-password" 
-          />
-          <AITextField 
-            margin="normal" 
-            fullWidth 
-            id="venueAddress" 
-            label="🏛️ Venue Address" 
-            name="venueAddress" 
-          />
-          <AITextField 
-            margin="normal" 
-            fullWidth 
-            id="facebookUrl" 
-            label="📱 Social Media URL" 
-            name="facebookUrl" 
-            placeholder="Facebook, Instagram, or Website"
-          />
-          
-          <Box sx={{ mt: 3, mb: 2 }}>
-            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600, mb: 1 }}>
-              📸 Venue Photos
+    <AuthLayout
+      title="List your venue on Event Planner Studio"
+      subtitle="Connect with event directors, showcase your space, and streamline bookings."
+      description="Join a network of premiere venues and manage inquiries, holds, and contracts in one platform."
+      sideContent={
+        <Stack spacing={3}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <LocationOnRoundedIcon sx={{ fontSize: 32, color: 'secondary.light' }} />
+            <Typography variant="body1" color="text.secondary">
+              Highlight your space's unique features with stunning imagery and detailed specifications.
             </Typography>
-            <Box sx={{ 
-              p: 2, 
-              background: 'rgba(255, 255, 255, 0.1)', 
-              borderRadius: '12px', 
-              border: '2px dashed rgba(255, 255, 255, 0.3)' 
-            }}>
-              <input 
-                type="file" 
-                name="photo" 
-                accept="image/*" 
-                style={{ 
-                  width: '100%', 
-                  padding: '8px', 
-                  backgroundColor: 'transparent', 
-                  color: 'white',
-                  border: 'none' 
-                }} 
-              />
-            </Box>
-          </Box>
-
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600, mb: 1 }}>
-              🏟️ Additional Photo
-            </Typography>
-            <Box sx={{ 
-              p: 2, 
-              background: 'rgba(255, 255, 255, 0.1)', 
-              borderRadius: '12px', 
-              border: '2px dashed rgba(255, 255, 255, 0.3)' 
-            }}>
-              <input 
-                type="file" 
-                name="additionalPhoto" 
-                accept="image/*" 
-                style={{ 
-                  width: '100%', 
-                  padding: '8px', 
-                  backgroundColor: 'transparent', 
-                  color: 'white',
-                  border: 'none' 
-                }} 
-              />
-            </Box>
-          </Box>
-          
-          {error && (
-            <Box sx={{ 
-              mt: 2, 
-              p: 2, 
-              background: 'rgba(244, 67, 54, 0.1)', 
-              borderRadius: '12px',
-              border: '1px solid rgba(244, 67, 54, 0.3)'
-            }}>
-              <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
-                {error}
+          </Stack>
+          <Stack spacing={1.5}>
+            {['Calendar sync & availability', 'Instant booking holds', 'Integrated contracts & deposits', 'Performance analytics'].map((item) => (
+              <Stack
+                key={item}
+                direction="row"
+                spacing={1.5}
+                alignItems="center"
+                sx={{ color: 'text.secondary' }}
+              >
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: 'secondary.main',
+                  }}
+                />
+                <Typography variant="body2">{item}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Stack>
+      }
+      footer={
+        <Button
+          component={RouterLink}
+          to="/register"
+          startIcon={<ArrowBackRoundedIcon />}
+          sx={{ color: 'text.secondary' }}
+        >
+          Back to role directory
+        </Button>
+      }
+    >
+      <motion.div
+        variants={formContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <Stack component="form" onSubmit={handleSubmit} spacing={3}>
+          <motion.div variants={formFieldVariants}>
+            <Stack spacing={1}>
+              <Typography variant="h4" fontWeight={700} lineHeight={1.3}>
+                Venue information
               </Typography>
-            </Box>
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                Profiles with high-quality photos and complete details receive 5 more inquiries.
+              </Typography>
+            </Stack>
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="name" 
+              label="Venue name" 
+              required 
+              autoFocus 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="email" 
+              label="Primary contact email" 
+              type="email" 
+              required 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="password" 
+              label="Password" 
+              type="password" 
+              required 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="venueAddress" 
+              label="Full venue address" 
+              placeholder="Street, city, state, zip code"
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <TextField 
+                    name="capacity" 
+                    label="Maximum capacity" 
+                    type="number"
+                    inputProps={{ min: 1 }}
+                    placeholder="Total guest capacity"
+                    fullWidth 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </motion.div>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <TextField 
+                    name="venueType" 
+                    label="Venue type" 
+                    placeholder="Theater, ballroom, arena"
+                    fullWidth 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </motion.div>
+              </Grid>
+            </Grid>
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="facebookUrl" 
+              label="Website or social media" 
+              placeholder="Facebook, Instagram, or venue website"
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField
+              name="description"
+              label="Venue description"
+              placeholder="Highlight your space's unique features, amenities, and ideal event types"
+              multiline
+              rows={3}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <FileUploadField
+              name="photo"
+              label="Primary venue photo"
+              accept="image/*"
+              helperText="High-resolution image showcasing your main space (JPG or PNG, max 10MB)."
+              required
+            />
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <FileUploadField
+              name="additionalPhoto"
+              label="Additional venue photo (optional)"
+              accept="image/*"
+              helperText="Show another angle, setup style, or event in progress."
+            />
+          </motion.div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, type: 'spring', stiffness: 400 }}
+            >
+              <motion.div
+                animate={{
+                  x: [0, -10, 10, -10, 10, 0],
+                }}
+                transition={{ duration: 0.5 }}
+              >
+                <Alert severity="error" variant="outlined">
+                  {error}
+                </Alert>
+              </motion.div>
+            </motion.div>
           )}
 
-          <AIButton
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={loading}
-            sx={{ mt: 3, mb: 2 }}
-          >
-            {loading ? 'Creating Profile...' : '🏛️ Join as Venue Owner'}
-          </AIButton>
-
-          <Box textAlign="center" sx={{ mt: 3 }}>
-            <Button
-              component={Link}
-              to="/register"
-              startIcon={<ArrowBackIcon />}
+          <motion.div variants={formFieldVariants}>
+            <MotionButton
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={loading}
+              startIcon={!loading && <StadiumRoundedIcon />}
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: '0 8px 20px rgba(91, 153, 194, 0.4)',
+              }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               sx={{
-                color: 'rgba(255,255,255,0.9)',
+                py: 1.5,
+                fontSize: '1rem',
                 fontWeight: 600,
                 textTransform: 'none',
-                '&:hover': {
-                  background: 'rgba(255,255,255,0.1)',
-                }
               }}
             >
-              Back to Role Selection
-            </Button>
-          </Box>
-        </Box>
-      </GlassPaper>
-    </BackgroundContainer>
+              {loading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <CircularProgress size={24} color="inherit" />
+                </motion.div>
+              ) : (
+                'Join as venue owner'
+              )}
+            </MotionButton>
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              After approval, you'll access a dashboard to manage bookings, track inquiries, and upload floor plans.
+            </Typography>
+          </motion.div>
+        </Stack>
+      </motion.div>
+    </AuthLayout>
   );
 }

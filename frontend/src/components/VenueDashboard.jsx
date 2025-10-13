@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Alert, IconButton } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
+import { motion } from 'motion/react';
 import EditIcon from '@mui/icons-material/Edit';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
@@ -20,121 +21,69 @@ import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription, useProAccess } from '../hooks/useSubscription';
 
-// AI-themed animations for venue
-const float = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-`
+// Create Motion components
+const MotionPaper = motion.create(Paper);
+const MotionBox = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`
-
-const venuePulse = keyframes`
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
-  25% { transform: scale(1.1) rotate(2deg); opacity: 1; }
-  50% { transform: scale(1.05) rotate(-1deg); opacity: 0.9; }
-  75% { transform: scale(1.08) rotate(1deg); opacity: 1; }
-`
-
-// AI-themed styled components for venue (green theme)
-const VenueProfileCard = styled(Paper)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+// Color Hunt styled components for venue
+const ProfileCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '20px',
+  color: '#F9DBBA',
   overflow: 'hidden',
   position: 'relative',
-  animation: `${float} 6s ease-in-out infinite`,
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(-45deg, rgba(22, 160, 133, 0.6) 0%, rgba(243, 156, 18, 0.6) 25%, rgba(39, 174, 96, 0.6) 50%, rgba(230, 126, 34, 0.6) 75%, rgba(46, 204, 113, 0.6) 100%)',
-    backgroundSize: '400% 400%',
-    animation: `${gradientShift} 10s ease infinite`,
-    zIndex: -1,
-  }
-}))
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+}));
 
-const GlassCard = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+const InfoCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '16px',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.15)',
-    transform: 'translateY(-5px)',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-  }
-}))
+  color: '#F9DBBA',
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+}));
 
-const FloatingVenueIcon = styled(Box)(({ theme }) => ({
-  animation: `${venuePulse} 4s ease-in-out infinite`,
+const ActionButton = styled(Button)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+  color: '#F9DBBA',
+  border: '1px solid rgba(91, 153, 194, 0.4)',
+  borderRadius: '12px',
+  fontWeight: 600,
+  textTransform: 'none',
+  padding: '10px 24px',
+  '&.MuiButton-outlined': {
+    background: 'transparent',
+    border: '1px solid rgba(91, 153, 194, 0.5)',
+    '&:hover': {
+      background: 'rgba(91, 153, 194, 0.15)',
+      border: '1px solid #5B99C2',
+    }
+  }
+}));
+
+const VenueIconBox = styled(MotionBox)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
+  background: 'rgba(91, 153, 194, 0.2)',
   borderRadius: '12px',
-  border: '1px solid rgba(255,255,255,0.3)',
-  backdropFilter: 'blur(10px)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.1) rotate(5deg)',
-    boxShadow: '0 15px 30px rgba(133, 255, 189, 0.4)',
-  }
-}))
-
-const AIButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
-  color: '#fff',
-  border: '1px solid rgba(255, 255, 255, 0.3)',
-  borderRadius: '12px',
-  backdropFilter: 'blur(10px)',
-  fontWeight: 600,
-  textTransform: 'none',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.2) 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-  },
-  '&.MuiButton-contained': {
-    background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
-    color: '#fff',
-    '&:hover': {
-      background: 'linear-gradient(135deg, #219a52 0%, #27ae60 100%)',
-    }
-  }
-}))
-
-const GradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-  fontWeight: 700,
-  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-}))
+  border: '1px solid rgba(91, 153, 194, 0.4)',
+}));
 
 const InfoBox = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
   padding: '12px 0',
-  borderBottom: '1px solid rgba(255,255,255,0.1)',
+  borderBottom: '1px solid rgba(91, 153, 194, 0.2)',
   '&:last-child': {
     borderBottom: 'none',
   }
-}))
+}));
 
-const Sparkline = ({ values = [], color = '#2e7d32', width = 100, height = 28 }) => {
+const Sparkline = ({ values = [], color = '#5B99C2', width = 100, height = 28 }) => {
   if (!values || values.length === 0) return null;
   const max = Math.max(...values);
   const min = Math.min(...values);
@@ -215,100 +164,186 @@ const VenueDashboard = () => {
   <DashboardLayout title="Venue Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="venue"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         {/* Profile header with banner */}
-        <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden', position: 'relative' }}>
+        <ProfileCard 
+          elevation={0} 
+          sx={{ mb: 3, overflow: 'hidden', position: 'relative' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <ProBadge 
             variant={isPro ? "pro" : undefined}
             size="large"
             style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}
           />
-          <Box sx={{ height: 160, background: 'linear-gradient(90deg,#11998e,#38ef7d)', position: 'relative' }} />
+          <Box sx={{ height: 160, background: 'linear-gradient(90deg, #5B99C2, #1A4870)', position: 'relative' }} />
           <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, mt: -8 }}>
-            <Avatar sx={{ width: 96, height: 96, border: '4px solid white', bgcolor: 'success.main' }}>
-              {user.name?.charAt(0)?.toUpperCase()}
-            </Avatar>
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 2 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Avatar sx={{ 
+                width: 96, 
+                height: 96, 
+                border: '4px solid rgba(91, 153, 194, 0.5)', 
+                background: 'linear-gradient(135deg, #5B99C2, #1A4870)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+              }}>
+                {user.name?.charAt(0)?.toUpperCase()}
+              </Avatar>
+            </motion.div>
             <Box sx={{ flex: 1 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="h5">{user.name}</Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>{user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}</Typography>
+                  <Typography variant="h5" sx={{ color: '#F9DBBA', fontWeight: 700 }}>
+                    {user.name}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.85)' }}>
+                    {user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}
+                  </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <IconButton color="primary" onClick={() => navigate('/me')}><EditIcon /></IconButton>
-                  {!isPro && (
-                    <Button 
-                      variant="contained"
-                      onClick={() => setUpgradeModalOpen(true)}
-                      sx={{ 
-                        background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.8) 0%, rgba(255, 165, 0, 0.8) 100%)',
-                        color: '#000',
-                        '&:hover': { background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.9) 0%, rgba(255, 165, 0, 0.9) 100%)' }
-                      }}
+                  <MotionBox whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                    <IconButton 
+                      sx={{ color: '#5B99C2' }} 
+                      onClick={() => navigate('/me')}
                     >
-                      <StarIcon sx={{ mr: 1 }} />
-                      Upgrade to Pro
-                    </Button>
+                      <EditIcon />
+                    </IconButton>
+                  </MotionBox>
+                  {!isPro && (
+                    <MotionBox whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button 
+                        variant="contained"
+                        onClick={() => setUpgradeModalOpen(true)}
+                        sx={{ 
+                          background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                          color: '#1F316F',
+                          fontWeight: 700,
+                          '&:hover': { background: 'linear-gradient(135deg, #FFA500 0%, #FFD700 100%)' }
+                        }}
+                      >
+                        <StarIcon sx={{ mr: 1 }} />
+                        Upgrade to Pro
+                      </Button>
+                    </MotionBox>
                   )}
                 </Box>
               </Box>
-              {user.venueAddress && (<Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mt: 1 }}>{user.venueAddress}</Typography>)}
+              {user.venueAddress && (
+                <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.85)', mt: 1 }}>
+                  <LocationOnIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5, color: '#5B99C2' }} />
+                  {user.venueAddress}
+                </Typography>
+              )}
             </Box>
           </Box>
-        </Paper>
+        </ProfileCard>
 
         <Grid container spacing={3} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
             <StatCard title="Bookings" value="—" subtitle="This month" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </MotionGrid>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
             <StatCard title="Capacity" value={`${user.capacity || '—'}`} subtitle="Max" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </MotionGrid>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <StatCard title="Rating" value="—" subtitle="Average" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </MotionGrid>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          >
             <StatCard title="Member Since" value={new Date(user.createdAt).toLocaleDateString()} />
-          </Grid>
+          </MotionGrid>
         </Grid>
         
         {isPro && (
-          <Paper elevation={1} sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%)' }}>
+          <InfoCard 
+            elevation={0} 
+            sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%)', border: '1px solid rgba(255, 215, 0, 0.3)' }}
+            component={motion.div}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
             <Typography variant="h5" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <StarIcon sx={{ color: '#FFD700' }} />
-              Pro Analytics
+              <span style={{ color: '#F9DBBA', fontWeight: 700 }}>Pro Analytics</span>
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%)' }}>
-                  <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+              <MotionGrid item xs={12} md={4}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+              >
+                <InfoCard 
+                  elevation={2} 
+                  sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)' }}
+                  component={motion.div}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                >
+                  <Typography variant="h3" sx={{ color: '#F9DBBA', fontWeight: 'bold' }}>
                     1,247
                   </Typography>
-                  <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                  <Typography variant="body1" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>
                     Profile Views This Month
                   </Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #81C784 0%, #66BB6A 100%)' }}>
-                  <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                </InfoCard>
+              </MotionGrid>
+              <MotionGrid item xs={12} md={4}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.7 }}
+              >
+                <InfoCard 
+                  elevation={2} 
+                  sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #66BB6A 0%, #388E3C 100%)' }}
+                  component={motion.div}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                >
+                  <Typography variant="h3" sx={{ color: '#F9DBBA', fontWeight: 'bold' }}>
                     34
                   </Typography>
-                  <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                  <Typography variant="body1" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>
                     Event Bookings This Month
                   </Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #FFB74D 0%, #FFA726 100%)' }}>
-                  <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                </InfoCard>
+              </MotionGrid>
+              <MotionGrid item xs={12} md={4}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
+              >
+                <InfoCard 
+                  elevation={2} 
+                  sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #FFA726 0%, #F57C00 100%)' }}
+                  component={motion.div}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                >
+                  <Typography variant="h3" sx={{ color: '#F9DBBA', fontWeight: 'bold' }}>
                     $8,750
                   </Typography>
-                  <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                  <Typography variant="body1" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>
                     Revenue This Month
                   </Typography>
-                </Paper>
-              </Grid>
+                </InfoCard>
+              </MotionGrid>
             </Grid>
-          </Paper>
+          </InfoCard>
         )}
 
         {message && (

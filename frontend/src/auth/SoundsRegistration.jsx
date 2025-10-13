@@ -1,272 +1,35 @@
-import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Container, CssBaseline, Box, Typography, TextField, Button, FormControl, InputLabel, Select, MenuItem, Chip, OutlinedInput, Alert } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
+﻿import * as React from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import VolumeUpRoundedIcon from '@mui/icons-material/VolumeUpRounded';
+import GraphicEqRoundedIcon from '@mui/icons-material/GraphicEqRounded';
+import { motion } from 'motion/react';
 import { register } from '../api/auth';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import AuthLayout from '../components/layout/AuthLayout';
+import FileUploadField from '../components/common/FileUploadField';
+import { formContainerVariants, formFieldVariants } from '../utils/motionVariants';
 
-// AI-themed animations for sounds
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`
-
-const float = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-`
-
-const soundWave = keyframes`
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
-  25% { transform: scale(1.2) rotate(3deg); opacity: 1; }
-  50% { transform: scale(1.1) rotate(-2deg); opacity: 0.9; }
-  75% { transform: scale(1.15) rotate(1deg); opacity: 1; }
-`
-
-// AI-themed styled components for sounds (blue theme)
-const BackgroundContainer = styled(Box)(() => ({
-  minHeight: '100vh',
-  background: 'linear-gradient(-45deg, #1e3c72 0%, #2a5298 25%, #1e3c72 50%, #2a5298 75%, #1e3c72 100%)',
-  backgroundSize: '400% 400%',
-  animation: `${gradientShift} 8s ease infinite`,
-  position: 'relative',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '20px 0',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-    backdropFilter: 'blur(10px)',
-  }
-}))
-
-const GlassPaper = styled(Box)(() => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(20px)',
-  borderRadius: '20px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  padding: '40px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-  position: 'relative',
-  zIndex: 1,
-  maxWidth: '500px',
-  width: '100%',
-  maxHeight: '90vh',
-  overflowY: 'auto',
-}))
-
-const FloatingIcon = styled(Box)(() => ({
-  animation: `${soundWave} 3s ease-in-out infinite`,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '80px',
-  height: '80px',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
-  borderRadius: '50%',
-  border: '1px solid rgba(255,255,255,0.3)',
-  backdropFilter: 'blur(10px)',
-  margin: '0 auto 20px',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.1)',
-    boxShadow: '0 20px 40px rgba(79, 172, 254, 0.4)',
-  }
-}))
-
-const AITextField = styled(TextField)(() => ({
-  '& .MuiOutlinedInput-root': {
-    background: 'rgba(255, 255, 255, 0.1)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    color: '#fff',
-    '& fieldset': {
-      border: 'none',
-    },
-    '&:hover': {
-      background: 'rgba(255, 255, 255, 0.15)',
-    },
-    '&.Mui-focused': {
-      background: 'rgba(255, 255, 255, 0.15)',
-      boxShadow: '0 0 20px rgba(79, 172, 254, 0.4)',
-      '& fieldset': {
-        border: '2px solid rgba(79, 172, 254, 0.6)',
-      },
-    },
-  },
-  '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: 600,
-    '&.Mui-focused': {
-      color: '#4facfe',
-    }
-  },
-  '& .MuiInputBase-input': {
-    color: '#fff',
-    '&::placeholder': {
-      color: 'rgba(255, 255, 255, 0.8)',
-    }
-  }
-}))
-
-const AIFormControl = styled(FormControl)(() => ({
-  '& .MuiOutlinedInput-root': {
-    background: 'rgba(255, 255, 255, 0.1)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    color: '#fff',
-    '& fieldset': {
-      border: 'none',
-    },
-    '&:hover': {
-      background: 'rgba(255, 255, 255, 0.15)',
-    },
-    '&.Mui-focused': {
-      background: 'rgba(255, 255, 255, 0.15)',
-      boxShadow: '0 0 20px rgba(79, 172, 254, 0.4)',
-    }
-  },
-  '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: 600,
-    '&.Mui-focused': {
-      color: '#4facfe',
-    }
-  },
-  '& .MuiChip-root': {
-    background: 'rgba(79, 172, 254, 0.2)',
-    color: '#fff',
-    border: '1px solid rgba(79, 172, 254, 0.3)',
-  }
-}))
-
-const AIButton = styled(Button)(() => ({
-  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  color: '#fff',
-  borderRadius: '12px',
-  padding: '12px 0',
-  fontSize: '16px',
-  fontWeight: 600,
-  textTransform: 'none',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  backdropFilter: 'blur(10px)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(79, 172, 254, 0.4)',
-  },
-  '&:disabled': {
-    background: 'rgba(255, 255, 255, 0.1)',
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-}))
-
-const GradientText = styled(Typography)(() => ({
-  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-  fontWeight: 700,
-  textAlign: 'center',
-  marginBottom: '30px',
-  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-}))
-
-const FileUploadBox = styled(Box)(() => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(10px)',
-  borderRadius: '12px',
-  border: '2px dashed rgba(255, 255, 255, 0.5)',
-  padding: '20px',
-  textAlign: 'center',
-  margin: '10px 0',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.15)',
-    borderColor: 'rgba(255, 255, 255, 0.7)',
-  },
-  '& input[type="file"]': {
-    color: '#fff',
-    width: '100%',
-    '&::file-selector-button': {
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
-      color: '#fff',
-      border: '1px solid rgba(255, 255, 255, 0.3)',
-      borderRadius: '8px',
-      padding: '8px 16px',
-      marginRight: '10px',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        background: 'rgba(255, 255, 255, 0.2)',
-      }
-    }
-  }
-}))
-
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 250,
-    },
-  },
-};
-
-const soundEquipment = [
-  'PA Systems', 'Microphones', 'Mixers', 'Amplifiers', 'Speakers', 'Subwoofers', 'Monitors', 'Audio Interfaces', 'Wireless Systems', 'Cables & Connectors', 'Audio Processors', 'Equalizers', 'Compressors', 'Effects Units', 'Recording Equipment'
-];
-
-const eventTypes = [
-  'Weddings', 'Corporate Events', 'Concerts', 'Parties', 'Nightclubs', 'Theater', 'Dance Events', 'Festivals', 'Private Events', 'Conferences', 'Trade Shows', 'Birthday Parties', 'Anniversaries', 'Graduations', 'Holiday Events'
-];
-
-const services = [
-  'Sound System Setup', 'Live Sound Mixing', 'Recording Services', 'Audio Equipment Rental', 'Sound Design', 'Audio Engineering', 'DJ Services', 'Karaoke Setup', 'Microphone Management', 'Sound Check', 'Audio Troubleshooting', 'Equipment Maintenance'
-];
+const MotionButton = motion(Button);
 
 export default function SoundsRegistration() {
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
-  const [selectedEquipment, setSelectedEquipment] = React.useState([]);
-  const [selectedEventTypes, setSelectedEventTypes] = React.useState([]);
-  const [selectedServices, setSelectedServices] = React.useState([]);
-
-  const handleEquipmentChange = (event) => {
-    const value = event.target.value;
-    setSelectedEquipment(typeof value === 'string' ? value.split(',') : value);
-  };
-
-  const handleEventTypeChange = (event) => {
-    const value = event.target.value;
-    setSelectedEventTypes(typeof value === 'string' ? value.split(',') : value);
-  };
-
-  const handleServicesChange = (event) => {
-    const value = event.target.value;
-    setSelectedServices(typeof value === 'string' ? value.split(',') : value);
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.append('role', 'sounds');
-    formData.append('equipment', selectedEquipment.join(','));
-    formData.append('eventTypes', selectedEventTypes.join(','));
-    formData.append('services', selectedServices.join(','));
 
     setLoading(true);
     setError('');
@@ -275,154 +38,374 @@ export default function SoundsRegistration() {
       if (res.token) localStorage.setItem('token', res.token);
       navigate('/me');
     } catch (e) {
-      setError(e?.response?.data?.error || 'Registration failed');
+      setError(e?.response?.data?.error || 'Registration failed. Please check your details.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <BackgroundContainer>
-      {/* Floating sound wave icons */}
-      <FloatingIcon sx={{ position: 'absolute', top: '15%', left: '10%' }}>
-        <VolumeUpIcon sx={{ fontSize: '60px', color: 'rgba(255,255,255,0.5)' }} />
-      </FloatingIcon>
-      <FloatingIcon sx={{ position: 'absolute', bottom: '20%', left: '20%' }}>
-        <VolumeUpIcon sx={{ fontSize: '55px', color: 'rgba(255,255,255,0.45)' }} />
-      </FloatingIcon>
-      
-      <GlassPaper>
-        <FloatingIcon>
-          <VolumeUpIcon sx={{ fontSize: '32px', color: '#fff' }} />
-        </FloatingIcon>
-        
-        <GradientText variant="h4">
-          Sound Services Registration
-        </GradientText>
+    <AuthLayout
+      title="Amplify events with Event Planner Studio"
+      subtitle="Connect with event directors, showcase your audio expertise, and manage sound production seamlessly."
+      description="Join a network of audio professionals and streamline bookings, equipment tracking, and project coordination."
+      sideContent={
+        <Stack spacing={3}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <GraphicEqRoundedIcon sx={{ fontSize: 32, color: 'secondary.light' }} />
+            <Typography variant="body1" color="text.secondary">
+              Showcase your sound systems, equipment inventory, and portfolio of flawlessly executed events.
+            </Typography>
+          </Stack>
+          <Stack spacing={1.5}>
+            {['Equipment inventory & tracking', 'Crew scheduling & coordination', 'Project quotes & contracts', 'Client portfolio & reviews'].map((item) => (
+              <Stack
+                key={item}
+                direction="row"
+                spacing={1.5}
+                alignItems="center"
+                sx={{ color: 'text.secondary' }}
+              >
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: 'secondary.main',
+                  }}
+                />
+                <Typography variant="body2">{item}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Stack>
+      }
+      footer={
+        <Button
+          component={RouterLink}
+          to="/register"
+          startIcon={<ArrowBackRoundedIcon />}
+          sx={{ color: 'text.secondary' }}
+        >
+          Back to role directory
+        </Button>
+      }
+    >
+      <motion.div
+        variants={formContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <Stack component="form" onSubmit={handleSubmit} spacing={3}>
+          <motion.div variants={formFieldVariants}>
+            <Stack spacing={1}>
+              <Typography variant="h4" fontWeight={700} lineHeight={1.3}>
+                Sound service details
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                Profiles with complete equipment lists and project portfolios receive 4 more inquiries.
+              </Typography>
+            </Stack>
+          </motion.div>
 
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 2,
-              background: 'rgba(244, 67, 54, 0.2)',
-              border: '1px solid rgba(244, 67, 54, 0.3)',
-              color: 'white',
-              '& .MuiAlert-icon': {
-                color: '#ff6b6b'
-              }
-            }}
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            {error}
-          </Alert>
-        )}
+            <TextField 
+              name="companyName" 
+              label="Company/Business name" 
+              required 
+              autoFocus 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
 
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <AITextField margin="normal" required fullWidth id="companyName" label="Company/Business Name" name="companyName" autoFocus />
-          <AITextField margin="normal" required fullWidth id="email" label="Email Address" name="email" autoComplete="email" />
-          <AITextField margin="normal" fullWidth id="phone" label="Contact Phone" name="phone" />
-          <AITextField margin="normal" required fullWidth name="password" label="Password" type="password" id="password" autoComplete="new-password" />
-          <AITextField margin="normal" fullWidth id="contactPerson" label="Contact Person Name" name="contactPerson" />
-          <AITextField margin="normal" fullWidth id="address" label="Business Address" name="address" multiline rows={2} />
-          
-          <AIFormControl sx={{ mt: 2, width: '100%' }}>
-            <InputLabel id="equipment-label">Sound Equipment Types</InputLabel>
-            <Select
-              labelId="equipment-label"
-              id="equipment"
-              multiple
-              value={selectedEquipment}
-              onChange={handleEquipmentChange}
-              input={<OutlinedInput label="Sound Equipment Types" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} />
-                  ))}
-                </Box>
-              )}
-              MenuProps={MenuProps}
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="email" 
+              label="Primary contact email" 
+              type="email" 
+              required 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="phone" 
+              label="Contact number" 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="password" 
+              label="Password" 
+              type="password" 
+              required 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="contactPerson" 
+              label="Primary contact person" 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="address" 
+              label="Business address" 
+              placeholder="Street, city, state, zip code"
+              multiline
+              rows={2}
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <TextField 
+                    name="crewSize" 
+                    label="Crew size" 
+                    type="number"
+                    inputProps={{ min: 1 }}
+                    placeholder="Number of engineers"
+                    fullWidth 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </motion.div>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <TextField 
+                    name="website" 
+                    label="Website" 
+                    placeholder="https://yourwebsite.com"
+                    fullWidth 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </motion.div>
+              </Grid>
+            </Grid>
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField
+              name="equipment"
+              label="Sound equipment"
+              placeholder="PA systems, microphones, mixers, speakers, monitors, etc."
+              multiline
+              rows={2}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField
+              name="eventTypes"
+              label="Event specialties"
+              placeholder="Weddings, concerts, corporate events, festivals, theater, etc."
+              multiline
+              rows={2}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField
+              name="services"
+              label="Services offered"
+              placeholder="Sound system setup, live mixing, recording, equipment rental, audio engineering, etc."
+              multiline
+              rows={2}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField
+              name="experience"
+              label="Years of experience"
+              type="number"
+              inputProps={{ min: 0 }}
+              placeholder="Total years in audio production"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <TextField 
+                    name="instagramLink" 
+                    label="Instagram" 
+                    placeholder="@yourcompany"
+                    fullWidth 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </motion.div>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <TextField 
+                    name="facebookLink" 
+                    label="Facebook" 
+                    fullWidth 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </motion.div>
+              </Grid>
+            </Grid>
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <FileUploadField
+              name="photo"
+              label="Service showcase photo"
+              accept="image/*"
+              helperText="High-resolution image of your sound setup or past event (JPG or PNG, max 10MB)."
+              required
+            />
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <FileUploadField
+              name="additionalPhoto"
+              label="Additional portfolio photo (optional)"
+              accept="image/*"
+              helperText="Show another project or equipment configuration."
+            />
+          </motion.div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, type: 'spring', stiffness: 400 }}
             >
-              {soundEquipment.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </Select>
-          </AIFormControl>
+              <motion.div
+                animate={{
+                  x: [0, -10, 10, -10, 10, 0],
+                }}
+                transition={{ duration: 0.5 }}
+              >
+                <Alert severity="error" variant="outlined">
+                  {error}
+                </Alert>
+              </motion.div>
+            </motion.div>
+          )}
 
-          <AIFormControl sx={{ mt: 2, width: '100%' }}>
-            <InputLabel id="event-types-label">Event Types You Serve</InputLabel>
-            <Select
-              labelId="event-types-label"
-              id="eventTypes"
-              multiple
-              value={selectedEventTypes}
-              onChange={handleEventTypeChange}
-              input={<OutlinedInput label="Event Types You Serve" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} />
-                  ))}
-                </Box>
-              )}
-              MenuProps={MenuProps}
+          <motion.div variants={formFieldVariants}>
+            <MotionButton
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={loading}
+              startIcon={!loading && <VolumeUpRoundedIcon />}
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: '0 8px 20px rgba(91, 153, 194, 0.4)',
+              }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              sx={{
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+              }}
             >
-              {eventTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </Select>
-          </AIFormControl>
-
-          <AIFormControl sx={{ mt: 2, width: '100%' }}>
-            <InputLabel id="services-label">Services You Provide</InputLabel>
-            <Select
-              labelId="services-label"
-              id="services"
-              multiple
-              value={selectedServices}
-              onChange={handleServicesChange}
-              input={<OutlinedInput label="Services You Provide" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} />
-                  ))}
-                </Box>
+              {loading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <CircularProgress size={24} color="inherit" />
+                </motion.div>
+              ) : (
+                'Register sound service'
               )}
-              MenuProps={MenuProps}
-            >
-              {services.map((service) => (
-                <MenuItem key={service} value={service}>
-                  {service}
-                </MenuItem>
-              ))}
-            </Select>
-          </AIFormControl>
+            </MotionButton>
+          </motion.div>
 
-          <AITextField margin="normal" fullWidth id="experience" label="Years of Experience" name="experience" type="number" />
-          <AITextField margin="normal" fullWidth id="crewSize" label="Crew Size Available" name="crewSize" type="number" />
-          <AITextField margin="normal" fullWidth id="equipmentDetails" label="Equipment Inventory Details" name="equipmentDetails" multiline rows={3} placeholder="List your sound equipment and inventory with specifications" />
-          <AITextField margin="normal" fullWidth id="bio" label="Company Bio" name="bio" multiline rows={3} placeholder="Tell us about your sound company" />
-          <AITextField margin="normal" fullWidth id="website" label="Website URL" name="website" />
-          <AITextField margin="normal" fullWidth id="instagramLink" label="Instagram Handle" name="instagramLink" />
-          <AITextField margin="normal" fullWidth id="facebookLink" label="Facebook Page" name="facebookLink" />
-          
-          <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
-            Upload Company Logo:
-          </Typography>
-          <FileUploadBox>
-            <input type="file" name="logo" accept="image/*" />
-          </FileUploadBox>
-          
-          <AIButton type="submit" fullWidth sx={{ mt: 3, mb: 2 }} disabled={loading}>
-            {loading ? 'Registering…' : 'Register Sound Service'}
-          </AIButton>
-        </Box>
-      </GlassPaper>
-    </BackgroundContainer>
+          <motion.div variants={formFieldVariants}>
+            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              After approval, you'll access a dashboard to manage bookings, track equipment, and showcase your audio portfolio.
+            </Typography>
+          </motion.div>
+        </Stack>
+      </motion.div>
+    </AuthLayout>
   );
 }

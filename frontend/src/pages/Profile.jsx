@@ -23,7 +23,8 @@ import {
   Chip,
   OutlinedInput
 } from '@mui/material'
-import { styled, keyframes } from '@mui/material/styles'
+import { styled } from '@mui/material/styles'
+import { motion } from 'motion/react'
 import PersonIcon from '@mui/icons-material/Person'
 import EmailIcon from '@mui/icons-material/Email'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
@@ -44,24 +45,14 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote'
 import BuildIcon from '@mui/icons-material/Build'
 import TwoFactorSettings from '../components/TwoFactorSettings'
 
-// AI-themed animations
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`
+// Create Motion components
+const MotionBox = motion.create(Box);
+const MotionAvatar = motion.create(Avatar);
 
-const float = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-`
-
-// AI-themed profile styled components
+// Color Hunt styled components for Profile
 const BackgroundContainer = styled(Box)(() => ({
   minHeight: '100vh',
-  background: 'linear-gradient(-45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
-  backgroundSize: '400% 400%',
-  animation: `${gradientShift} 8s ease infinite`,
+  background: 'linear-gradient(135deg, #1F316F 0%, #1A4870 50%, #1F316F 100%)',
   position: 'relative',
   display: 'flex',
   alignItems: 'flex-start',
@@ -75,18 +66,18 @@ const BackgroundContainer = styled(Box)(() => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-    backdropFilter: 'blur(10px)',
+    background: 'radial-gradient(circle at 50% 50%, rgba(91, 153, 194, 0.1) 0%, transparent 50%)',
+    pointerEvents: 'none',
   }
 }))
 
-const GlassPaper = styled(Box)(() => ({
-  background: 'rgba(255, 255, 255, 0.1)',
+const GlassPaper = styled(MotionBox)(() => ({
+  background: 'linear-gradient(135deg, rgba(26, 72, 112, 0.95) 0%, rgba(31, 49, 111, 0.95) 100%)',
   backdropFilter: 'blur(20px)',
   borderRadius: '20px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   padding: '40px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
   position: 'relative',
   zIndex: 1,
   width: '95%',
@@ -95,36 +86,27 @@ const GlassPaper = styled(Box)(() => ({
   textAlign: 'left',
 }))
 
-const FloatingAvatar = styled(Avatar)(() => ({
-  animation: `${float} 4s ease-in-out infinite`,
+const FloatingAvatar = styled(MotionAvatar)(() => ({
   width: '120px',
   height: '120px',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
-  border: '3px solid rgba(255,255,255,0.3)',
+  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+  border: '3px solid rgba(91, 153, 194, 0.5)',
   backdropFilter: 'blur(10px)',
   margin: '0 auto 20px',
   transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.1)',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-  }
 }))
 
 const GradientText = styled(Typography)(() => ({
-  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
+  color: '#F9DBBA',
   fontWeight: 700,
   textAlign: 'center',
   marginBottom: '30px',
-  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
 }))
 
 const AIButton = styled(Button)(() => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
-  color: '#fff',
-  border: '1px solid rgba(255, 255, 255, 0.3)',
+  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+  color: '#F9DBBA',
+  border: '1px solid rgba(91, 153, 194, 0.4)',
   borderRadius: '12px',
   backdropFilter: 'blur(10px)',
   fontWeight: 600,
@@ -132,27 +114,24 @@ const AIButton = styled(Button)(() => ({
   padding: '12px 24px',
   transition: 'all 0.3s ease',
   '&:hover': {
-    background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.2) 100%)',
+    background: 'linear-gradient(135deg, #1A4870 0%, #5B99C2 100%)',
     transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+    boxShadow: '0 8px 25px rgba(91, 153, 194, 0.4)',
   },
 }))
 
-const InfoBox = styled(Box)(() => ({
+const InfoBox = styled(MotionBox)(() => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   gap: '12px',
   padding: '16px',
-  background: 'rgba(255, 255, 255, 0.1)',
+  background: 'rgba(26, 72, 112, 0.6)',
   borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   margin: '16px 0',
   backdropFilter: 'blur(10px)',
   transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.15)',
-  }
 }))
 
 const DetailGrid = styled(Box)(() => ({
@@ -162,23 +141,18 @@ const DetailGrid = styled(Box)(() => ({
   marginTop: '30px',
 }))
 
-const DetailCard = styled(Box)(() => ({
-  background: 'rgba(255, 255, 255, 0.1)',
+const DetailCard = styled(MotionBox)(() => ({
+  background: 'linear-gradient(135deg, rgba(26, 72, 112, 0.7) 0%, rgba(31, 49, 111, 0.7) 100%)',
   backdropFilter: 'blur(15px)',
   borderRadius: '16px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   padding: '25px',
   transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.15)',
-    transform: 'translateY(-5px)',
-    boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
-  }
 }))
 
 const EditButton = styled(Button)(() => ({
-  background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-  color: '#fff',
+  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+  color: '#F9DBBA',
   border: 'none',
   borderRadius: '12px',
   fontWeight: 600,
@@ -187,14 +161,14 @@ const EditButton = styled(Button)(() => ({
   fontSize: '16px',
   transition: 'all 0.3s ease',
   '&:hover': {
-    background: 'linear-gradient(135deg, #45a049 0%, #4CAF50 100%)',
+    background: 'linear-gradient(135deg, #1A4870 0%, #5B99C2 100%)',
     transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(76, 175, 80, 0.4)',
+    boxShadow: '0 8px 25px rgba(91, 153, 194, 0.4)',
   },
 }))
 
 const SectionTitle = styled(Typography)(() => ({
-  color: '#fff',
+  color: '#F9DBBA',
   fontWeight: 700,
   fontSize: '20px',
   marginBottom: '15px',
@@ -223,55 +197,57 @@ const EditDialog = styled(Dialog)(() => ({
 
 const AITextField = styled(TextField)(() => ({
   '& .MuiOutlinedInput-root': {
-    background: 'rgba(255, 255, 255, 0.1)',
+    background: 'rgba(26, 72, 112, 0.6)',
     backdropFilter: 'blur(10px)',
     borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    color: '#fff',
+    border: '1px solid rgba(91, 153, 194, 0.3)',
+    color: '#F9DBBA',
     '& fieldset': {
       border: 'none',
     },
     '&:hover': {
-      background: 'rgba(255, 255, 255, 0.15)',
+      background: 'rgba(26, 72, 112, 0.7)',
+      border: '1px solid rgba(91, 153, 194, 0.5)',
     },
     '&.Mui-focused': {
-      background: 'rgba(255, 255, 255, 0.15)',
-      boxShadow: '0 0 20px rgba(79, 172, 254, 0.4)',
+      background: 'rgba(26, 72, 112, 0.8)',
+      border: '1px solid #5B99C2',
+      boxShadow: '0 0 20px rgba(91, 153, 194, 0.3)',
     }
   },
   '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(249, 219, 186, 0.8)',
     '&.Mui-focused': {
-      color: '#fff',
+      color: '#F9DBBA',
     }
   },
   '& .MuiInputBase-input': {
-    color: '#fff',
+    color: '#F9DBBA',
   },
   '& .MuiOutlinedInput-input': {
-    color: '#fff',
+    color: '#F9DBBA',
   }
 }))
 
 const AISelect = styled(FormControl)(() => ({
   '& .MuiOutlinedInput-root': {
-    background: 'rgba(255, 255, 255, 0.1)',
+    background: 'rgba(26, 72, 112, 0.6)',
     backdropFilter: 'blur(10px)',
     borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    color: '#fff',
+    border: '1px solid rgba(91, 153, 194, 0.3)',
+    color: '#F9DBBA',
     '& fieldset': {
       border: 'none',
     },
     '&:hover': {
-      background: 'rgba(255, 255, 255, 0.15)',
+      background: 'rgba(26, 72, 112, 0.7)',
     },
     '&.Mui-focused': {
-      background: 'rgba(255, 255, 255, 0.15)',
+      background: 'rgba(26, 72, 112, 0.8)',
     }
   },
   '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(249, 219, 186, 0.8)',
     '&.Mui-focused': {
       color: '#fff',
     }
@@ -364,9 +340,16 @@ export default function Profile() {
   return (
     <BackgroundContainer>
       <CssBaseline />
-      <GlassPaper>
-        <FloatingAvatar>
-          <PersonIcon sx={{ fontSize: 60, color: '#fff' }} />
+      <GlassPaper
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <FloatingAvatar
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          transition={{ type: 'spring', stiffness: 300 }}
+        >
+          <PersonIcon sx={{ fontSize: 60, color: '#F9DBBA' }} />
         </FloatingAvatar>
         
         <GradientText variant="h4">
@@ -378,10 +361,10 @@ export default function Profile() {
             sx={{ 
               mb: 3, 
               p: 2, 
-              background: 'rgba(244, 67, 54, 0.1)', 
-              border: '1px solid rgba(244, 67, 54, 0.3)',
+              background: 'rgba(91, 153, 194, 0.2)', 
+              border: '1px solid rgba(91, 153, 194, 0.4)',
               borderRadius: '8px',
-              color: '#fff',
+              color: '#F9DBBA',
               backdropFilter: 'blur(10px)',
             }}
           >
@@ -403,40 +386,50 @@ export default function Profile() {
 
             {/* Basic Information Card */}
             <DetailGrid>
-              <DetailCard>
+              <DetailCard
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                whileHover={{ y: -5, scale: 1.02 }}
+              >
                 <SectionTitle>Basic Information</SectionTitle>
                 <DetailItem>
-                  <PersonIcon sx={{ color: 'rgba(255,255,255,0.8)' }} />
-                  <Typography sx={{ color: '#fff', fontWeight: 500 }}>
+                  <PersonIcon sx={{ color: '#5B99C2' }} />
+                  <Typography sx={{ color: '#F9DBBA', fontWeight: 500 }}>
                     ID: {user.id}
                   </Typography>
                 </DetailItem>
                 <DetailItem>
-                  <EmailIcon sx={{ color: 'rgba(255,255,255,0.8)' }} />
-                  <Typography sx={{ color: '#fff', fontWeight: 500 }}>
+                  <EmailIcon sx={{ color: '#5B99C2' }} />
+                  <Typography sx={{ color: '#F9DBBA', fontWeight: 500 }}>
                     Email: {user.email}
                   </Typography>
                 </DetailItem>
                 <DetailItem>
-                  <WorkIcon sx={{ color: 'rgba(255,255,255,0.8)' }} />
-                  <Typography sx={{ color: '#fff', fontWeight: 500 }}>
+                  <WorkIcon sx={{ color: '#5B99C2' }} />
+                  <Typography sx={{ color: '#F9DBBA', fontWeight: 500 }}>
                     Role: {user.role || 'Not specified'}
                   </Typography>
                 </DetailItem>
               </DetailCard>
 
               {/* Contact Information Card */}
-              <DetailCard>
+              <DetailCard
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                whileHover={{ y: -5, scale: 1.02 }}
+              >
                 <SectionTitle>Contact Information</SectionTitle>
                 <DetailItem>
-                  <PhoneIcon sx={{ color: 'rgba(255,255,255,0.8)' }} />
-                  <Typography sx={{ color: '#fff', fontWeight: 500 }}>
+                  <PhoneIcon sx={{ color: '#5B99C2' }} />
+                  <Typography sx={{ color: '#F9DBBA', fontWeight: 500 }}>
                     Phone: {user.phone || 'Not provided'}
                   </Typography>
                 </DetailItem>
                 <DetailItem>
-                  <LocationOnIcon sx={{ color: 'rgba(255,255,255,0.8)' }} />
-                  <Typography sx={{ color: '#fff', fontWeight: 500 }}>
+                  <LocationOnIcon sx={{ color: '#5B99C2' }} />
+                  <Typography sx={{ color: '#F9DBBA', fontWeight: 500 }}>
                     Address: {user.address || 'Not provided'}
                   </Typography>
                 </DetailItem>

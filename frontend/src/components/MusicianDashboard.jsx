@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Link, Alert, IconButton } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
+import { motion } from 'motion/react';
 import EditIcon from '@mui/icons-material/Edit';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
@@ -20,108 +21,56 @@ import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription, useProAccess } from '../hooks/useSubscription';
 
-// AI-themed animations
-const float = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-`
+// Create Motion components
+const MotionPaper = motion.create(Paper);
+const MotionBox = motion.create(Box);
+const MotionGrid = motion.create(Grid);
 
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`
-
-const musicPulse = keyframes`
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
-  25% { transform: scale(1.1) rotate(5deg); opacity: 1; }
-  50% { transform: scale(1.05) rotate(-3deg); opacity: 0.9; }
-  75% { transform: scale(1.08) rotate(2deg); opacity: 1; }
-`
-
-// AI-themed styled components for musician
-const MusicianProfileCard = styled(Paper)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+// Color Hunt styled components
+const ProfileCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '20px',
+  color: '#F9DBBA',
   overflow: 'hidden',
   position: 'relative',
-  animation: `${float} 6s ease-in-out infinite`,
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(-45deg, rgba(30, 60, 114, 0.6) 0%, rgba(42, 82, 152, 0.6) 25%, rgba(142, 68, 173, 0.6) 50%, rgba(192, 57, 43, 0.6) 75%, rgba(39, 174, 96, 0.6) 100%)',
-    backgroundSize: '400% 400%',
-    animation: `${gradientShift} 12s ease infinite`,
-    zIndex: -1,
-  }
-}))
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+}));
 
-const GlassCard = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+const InfoCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '16px',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.15)',
-    transform: 'translateY(-5px)',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-  }
-}))
+  color: '#F9DBBA',
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+}));
 
-const FloatingMusicIcon = styled(Box)(({ theme }) => ({
-  animation: `${musicPulse} 4s ease-in-out infinite`,
+const ActionButton = styled(Button)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+  color: '#F9DBBA',
+  border: '1px solid rgba(91, 153, 194, 0.4)',
+  borderRadius: '12px',
+  fontWeight: 600,
+  textTransform: 'none',
+  padding: '10px 24px',
+  '&.MuiButton-outlined': {
+    background: 'transparent',
+    border: '1px solid rgba(91, 153, 194, 0.5)',
+    '&:hover': {
+      background: 'rgba(91, 153, 194, 0.15)',
+      border: '1px solid #5B99C2',
+    }
+  }
+}));
+
+const MusicIconBox = styled(MotionBox)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
+  background: 'rgba(91, 153, 194, 0.2)',
   borderRadius: '12px',
-  border: '1px solid rgba(255,255,255,0.3)',
-  backdropFilter: 'blur(10px)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.1) rotate(10deg)',
-    boxShadow: '0 15px 30px rgba(168, 237, 234, 0.4)',
-  }
-}))
-
-const AIButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
-  color: '#fff',
-  border: '1px solid rgba(255, 255, 255, 0.3)',
-  borderRadius: '12px',
-  backdropFilter: 'blur(10px)',
-  fontWeight: 600,
-  textTransform: 'none',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.2) 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-  },
-  '&.MuiButton-contained': {
-    background: 'linear-gradient(135deg, #3498db 0%, #9b59b6 100%)',
-    color: '#fff',
-    '&:hover': {
-      background: 'linear-gradient(135deg, #2980b9 0%, #8e44ad 100%)',
-    }
-  }
-}))
-
-const GradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-  fontWeight: 700,
-  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-}))
+  border: '1px solid rgba(91, 153, 194, 0.4)',
+}));
 
 const PhotoGallery = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -129,28 +78,23 @@ const PhotoGallery = styled(Box)(({ theme }) => ({
   flexWrap: 'wrap',
   '& img': {
     borderRadius: '12px',
-    border: '2px solid rgba(255,255,255,0.3)',
-    transition: 'all 0.3s ease',
-    '&:hover': {
-      transform: 'scale(1.05) rotate(2deg)',
-      boxShadow: '0 15px 30px rgba(0,0,0,0.3)',
-    }
+    border: '2px solid rgba(91, 153, 194, 0.4)',
   }
-}))
+}));
 
 const InfoBox = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
   padding: '12px 0',
-  borderBottom: '1px solid rgba(255,255,255,0.1)',
+  borderBottom: '1px solid rgba(91, 153, 194, 0.2)',
   '&:last-child': {
     borderBottom: 'none',
   }
-}))
+}));
 
 // Small inline sparkline to visualize recent activity
-const Sparkline = ({ values = [], color = '#1976d2', width = 100, height = 28 }) => {
+const Sparkline = ({ values = [], color = '#5B99C2', width = 100, height = 28 }) => {
   if (!values || values.length === 0) return null;
   const max = Math.max(...values);
   const min = Math.min(...values);
@@ -230,22 +174,30 @@ const MusicianDashboard = () => {
   return (
     <DashboardLayout title="Musician Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="musician"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* AI-enhanced profile header */}
-        <MusicianProfileCard elevation={0} sx={{ mb: 4, overflow: 'hidden' }}>
-          {/* Gradient banner */}
+        {/* Profile header with Color Hunt palette */}
+        <ProfileCard 
+          elevation={0} 
+          sx={{ mb: 4, overflow: 'hidden' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Banner */}
           <Box sx={{ 
             height: 140, 
-            background: 'linear-gradient(-45deg, rgba(30, 60, 114, 0.9) 0%, rgba(42, 82, 152, 0.9) 25%, rgba(142, 68, 173, 0.9) 50%, rgba(192, 57, 43, 0.9) 75%, rgba(39, 174, 96, 0.9) 100%)',
-            backgroundSize: '400% 400%',
-            animation: `${gradientShift} 10s ease infinite`,
+            background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 50%, #1F316F 100%)',
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <FloatingMusicIcon sx={{ width: 60, height: 60 }}>
-              <MusicNoteIcon sx={{ fontSize: 32, color: '#fff' }} />
-            </FloatingMusicIcon>
+            <MusicIconBox 
+              sx={{ width: 60, height: 60 }}
+              whileHover={{ scale: 1.1, rotate: 10 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+            >
+              <MusicNoteIcon sx={{ fontSize: 32, color: '#F9DBBA' }} />
+            </MusicIconBox>
           </Box>
           
           <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 3, mt: -4 }}>
@@ -254,25 +206,31 @@ const MusicianDashboard = () => {
               size="large"
               style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}
             />
-            <Avatar 
-              sx={{ 
-                width: 100, 
-                height: 100, 
-                border: '4px solid rgba(255,255,255,0.3)', 
-                bgcolor: 'transparent',
-                background: 'linear-gradient(135deg, #3498db 0%, #9b59b6 100%)',
-                animation: `${float} 5s ease-in-out infinite`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              }}
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 2 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             >
-              {user.name?.charAt(0)?.toUpperCase()}
-            </Avatar>
+              <Avatar 
+                sx={{ 
+                  width: 100, 
+                  height: 100, 
+                  border: '4px solid rgba(91, 153, 194, 0.5)', 
+                  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                  color: '#F9DBBA'
+                }}
+              >
+                {user.name?.charAt(0)?.toUpperCase()}
+              </Avatar>
+            </motion.div>
             
             <Box sx={{ flex: 1 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <GradientText variant="h4">{user.name}</GradientText>
-                  <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mt: 1 }}>
+                  <Typography variant="h4" sx={{ color: '#F9DBBA', fontWeight: 700 }}>
+                    {user.name}
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: 'rgba(249, 219, 186, 0.8)', mt: 1 }}>
                     🎵 {user.role} • Member since {new Date(user.createdAt).toLocaleDateString()}
                   </Typography>
                   {user.spotifyLink && (
@@ -285,50 +243,78 @@ const MusicianDashboard = () => {
                         alignItems: 'center',
                         gap: 1,
                         mt: 2,
-                        color: '#fff',
+                        color: '#5B99C2',
                         textDecoration: 'none',
-                        '&:hover': { textDecoration: 'underline' }
+                        '&:hover': { color: '#F9DBBA', textDecoration: 'underline' }
                       }}
                     >
                       <AudiotrackIcon /> Spotify Profile
                     </Link>
                   )}
                 </Box>
-                <AIButton onClick={() => navigate('/me')}>
-                  <EditIcon sx={{ mr: 1 }} />
-                  Edit Profile
-                </AIButton>
-                {!isPro && (
-                  <AIButton 
-                    onClick={() => setUpgradeModalOpen(true)}
-                    sx={{ 
-                      background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 165, 0, 0.3) 100%)',
-                      border: '1px solid rgba(255, 215, 0, 0.5)',
-                      '&:hover': { background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.4) 0%, rgba(255, 165, 0, 0.4) 100%)' }
-                    }}
-                  >
-                    <StarIcon sx={{ mr: 1 }} />
-                    Upgrade to Pro
-                  </AIButton>
-                )}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <MotionBox whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <ActionButton onClick={() => navigate('/me')}>
+                      <EditIcon sx={{ mr: 1 }} />
+                      Edit Profile
+                    </ActionButton>
+                  </MotionBox>
+                  {!isPro && (
+                    <MotionBox whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button 
+                        onClick={() => setUpgradeModalOpen(true)}
+                        sx={{ 
+                          background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                          color: '#1F316F',
+                          border: '1px solid rgba(255, 215, 0, 0.5)',
+                          borderRadius: '12px',
+                          fontWeight: 700,
+                          textTransform: 'none',
+                          '&:hover': { 
+                            background: 'linear-gradient(135deg, #FFA500 0%, #FFD700 100%)'
+                          }
+                        }}
+                      >
+                        <StarIcon sx={{ mr: 1 }} />
+                        Upgrade to Pro
+                      </Button>
+                    </MotionBox>
+                  )}
+                </Box>
               </Box>
             </Box>
           </Box>
-        </MusicianProfileCard>
+        </ProfileCard>
 
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
             <StatCard title="Gigs" value="—" subtitle="This month" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </MotionGrid>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
             <StatCard title="Followers" value="—" subtitle="Spotify" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </MotionGrid>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <StatCard title="Profile Views" value="—" subtitle="7 days" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </MotionGrid>
+          <MotionGrid item xs={12} sm={6} md={3}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          >
             <StatCard title="Member Since" value={new Date(user.createdAt).toLocaleDateString()} />
-          </Grid>
+          </MotionGrid>
         </Grid>
         
         {message && (
@@ -339,60 +325,78 @@ const MusicianDashboard = () => {
         
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            <GlassCard elevation={0} sx={{ p: 3, mb: 3 }}>
+            <InfoCard 
+              elevation={0} 
+              sx={{ p: 3, mb: 3 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              component={motion.div}
+              whileHover={{ y: -3 }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
-                  <QueueMusicIcon sx={{ color: '#fff' }} />
-                </FloatingMusicIcon>
-                <GradientText variant="h6">Recent Activity</GradientText>
+                <MusicIconBox sx={{ width: 40, height: 40 }}>
+                  <QueueMusicIcon sx={{ color: '#F9DBBA' }} />
+                </MusicIconBox>
+                <Typography variant="h6" sx={{ color: '#F9DBBA', fontWeight: 700 }}>
+                  Recent Activity
+                </Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+              <Box sx={{ display: 'flex', alignments: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body1" sx={{ color: 'rgba(249, 219, 186, 0.9)' }}>
                   Plays & Engagement
                 </Typography>
                 <Sparkline values={[5,7,6,10,9,12,15,11,13,16,14]} />
               </Box>
-            </GlassCard>
+            </InfoCard>
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <GlassCard elevation={0} sx={{ p: 3, height: '100%' }}>
+            <InfoCard 
+              elevation={0} 
+              sx={{ p: 3, height: '100%' }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                <FloatingMusicIcon sx={{ width: 40, height: 40 }}>
-                  <MusicNoteIcon sx={{ color: '#fff' }} />
-                </FloatingMusicIcon>
-                <GradientText variant="h6">About</GradientText>
+                <MusicIconBox sx={{ width: 40, height: 40 }}>
+                  <MusicNoteIcon sx={{ color: '#F9DBBA' }} />
+                </MusicIconBox>
+                <Typography variant="h6" sx={{ color: '#F9DBBA', fontWeight: 700 }}>
+                  About
+                </Typography>
               </Box>
               
               <InfoBox>
-                <MusicNoteIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                <MusicNoteIcon sx={{ color: '#5B99C2' }} />
                 <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Email</Typography>
-                  <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.email}</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Email</Typography>
+                  <Typography variant="body1" sx={{ color: '#F9DBBA', fontWeight: 500 }}>{user.email}</Typography>
                 </Box>
               </InfoBox>
 
               {user.phone && (
                 <InfoBox>
-                  <AudiotrackIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                  <AudiotrackIcon sx={{ color: '#5B99C2' }} />
                   <Box>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Phone</Typography>
-                    <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.phone}</Typography>
+                    <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Phone</Typography>
+                    <Typography variant="body1" sx={{ color: '#F9DBBA', fontWeight: 500 }}>{user.phone}</Typography>
                   </Box>
                 </InfoBox>
               )}
 
               <InfoBox>
-                <AlbumIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                <AlbumIcon sx={{ color: '#5B99C2' }} />
                 <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Role</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Role</Typography>
                   <Chip 
                     label={user.role || 'Musician'} 
                     sx={{ 
-                      background: 'linear-gradient(135deg, #3498db 0%, #9b59b6 100%)',
-                      color: '#fff',
+                      background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+                      color: '#F9DBBA',
                       fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)',
+                      border: '1px solid rgba(91, 153, 194, 0.4)',
                     }} 
                     size="small" 
                   />
@@ -400,15 +404,15 @@ const MusicianDashboard = () => {
               </InfoBox>
 
               <InfoBox>
-                <CalendarTodayIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                <CalendarTodayIcon sx={{ color: '#5B99C2' }} />
                 <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Member Since</Typography>
-                  <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Member Since</Typography>
+                  <Typography variant="body1" sx={{ color: '#F9DBBA', fontWeight: 500 }}>
                     {new Date(user.createdAt).toLocaleDateString()}
                   </Typography>
                 </Box>
               </InfoBox>
-            </GlassCard>
+            </InfoCard>
           </Grid>
 
           <Grid item xs={12} md={6}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Box, Avatar, Grid, Chip, Button, Fade } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
+import { motion } from 'motion/react';
 import DashboardLayout from './DashboardLayout';
 import StatCard from './StatCard';
 import ProBadge from './ProBadge';
@@ -17,110 +18,71 @@ import InsightsIcon from '@mui/icons-material/Insights';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import LockIcon from '@mui/icons-material/Lock';
 
-// AI-themed animations
-const float = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-`
+// Create Motion components
+const MotionPaper = motion.create(Paper);
+const MotionBox = motion.create(Box);
+const MotionAvatar = motion.create(Avatar);
+const MotionGrid = motion.create(Grid);
 
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`
-
-const glow = keyframes`
-  0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.4); }
-  50% { box-shadow: 0 0 30px rgba(102, 126, 234, 0.8), 0 0 40px rgba(118, 75, 162, 0.6); }
-`
-
-// AI-themed styled components
-const AIProfileCard = styled(Paper)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+// Color Hunt styled components
+const ProfileCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '20px',
-  color: '#fff',
+  color: '#F9DBBA',
   overflow: 'hidden',
   position: 'relative',
-  animation: `${float} 6s ease-in-out infinite`,
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(-45deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 25%, rgba(240, 147, 251, 0.3) 50%, rgba(245, 87, 108, 0.3) 75%, rgba(79, 172, 254, 0.3) 100%)',
-    backgroundSize: '400% 400%',
-    animation: `${gradientShift} 10s ease infinite`,
-    zIndex: -1,
-  }
-}))
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+}));
 
-const GlassCard = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+const InfoCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #1A4870 0%, #1F316F 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.3)',
   borderRadius: '16px',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'rgba(255, 255, 255, 0.15)',
-    transform: 'translateY(-5px)',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-  }
-}))
+  color: '#F9DBBA',
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+}));
 
-const FloatingAvatar = styled(Avatar)(({ theme }) => ({
-  animation: `${float} 4s ease-in-out infinite, ${glow} 3s ease-in-out infinite`,
-  border: '3px solid rgba(255,255,255,0.3)',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.1)',
-  }
-}))
-
-const AIButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)',
-  color: '#fff',
-  border: '1px solid rgba(255, 255, 255, 0.3)',
+const ActionButton = styled(Button)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+  color: '#F9DBBA',
+  border: '1px solid rgba(91, 153, 194, 0.4)',
   borderRadius: '12px',
-  backdropFilter: 'blur(10px)',
   fontWeight: 600,
   textTransform: 'none',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.2) 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-  },
-  '&.MuiButton-containedSecondary': {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  padding: '10px 24px',
+  '&.MuiButton-outlined': {
+    background: 'transparent',
+    border: '1px solid rgba(91, 153, 194, 0.5)',
     '&:hover': {
-      background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+      background: 'rgba(91, 153, 194, 0.15)',
+      border: '1px solid #5B99C2',
     }
   }
-}))
+}));
+
+const ProButton = styled(Button)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+  color: '#1F316F',
+  borderRadius: '12px',
+  fontWeight: 700,
+  textTransform: 'none',
+  padding: '10px 24px',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #FFA500 0%, #FFD700 100%)',
+    transform: 'translateY(-2px)',
+  }
+}));
 
 const InfoBox = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
   padding: '12px 0',
-  borderBottom: '1px solid rgba(255,255,255,0.1)',
+  borderBottom: '1px solid rgba(91, 153, 194, 0.2)',
   '&:last-child': {
     borderBottom: 'none',
   }
-}))
-
-const GradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-  fontWeight: 700,
-  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
 }))
 
 const UserDashboard = () => {
@@ -206,106 +168,214 @@ const UserDashboard = () => {
   return (
   <DashboardLayout title="User Dashboard" navItems={[{ label: 'Profile', to: '/me' }]} role="user"> 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <AIProfileCard elevation={0} sx={{ height: 180, p: 3, mb: 4, position: 'relative' }}>
+        <ProfileCard 
+          elevation={0} 
+          sx={{ height: 180, p: 3, mb: 4, position: 'relative' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <ProBadge 
             variant={isPro ? "pro" : undefined}
             size="large"
             style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}
           />
           <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <FloatingAvatar src={user.photo} sx={{ width: 100, height: 100 }}>
+            <MotionAvatar 
+              src={user.photo} 
+              sx={{ 
+                width: 100, 
+                height: 100,
+                border: '3px solid rgba(91, 153, 194, 0.5)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+              }}
+              whileHover={{ scale: 1.05, rotate: 2 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            >
               {user.name?.charAt(0)?.toUpperCase()}
-            </FloatingAvatar>
+            </MotionAvatar>
             <Box sx={{ ml: 3, flex: 1 }}>
-              <GradientText variant="h4">{user.name}</GradientText>
-              <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mt: 1 }}>
+              <Typography variant="h4" sx={{ color: '#F9DBBA', fontWeight: 700 }}>
+                {user.name}
+              </Typography>
+              <Typography variant="h6" sx={{ color: 'rgba(249, 219, 186, 0.8)', mt: 1 }}>
                 Event Planner
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
-                <EventIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                <EventIcon sx={{ color: '#5B99C2' }} />
+                <Typography variant="body2" sx={{ color: '#F9DBBA' }}>
                   Creating memorable experiences
                 </Typography>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <AIButton variant="contained" color="secondary" size="large">
+              <ActionButton 
+                variant="contained" 
+                size="large"
+                component={motion.button}
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 Edit Profile
-              </AIButton>
+              </ActionButton>
               {(!isPro && subscription && !subscription.loading) && (
-                <AIButton 
+                <ProButton 
                   variant="contained"
                   onClick={() => setUpgradeModalOpen(true)}
-                  sx={{ 
-                    background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.8) 0%, rgba(255, 165, 0, 0.8) 100%)',
-                    color: '#000',
-                    '&:hover': { background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.9) 0%, rgba(255, 165, 0, 0.9) 100%)' }
-                  }}
+                  component={motion.button}
+                  whileHover={{ y: -2, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <StarIcon sx={{ mr: 1 }} />
                   Upgrade to Pro
-                </AIButton>
+                </ProButton>
               )}
             </Box>
           </Box>
-        </AIProfileCard>
+        </ProfileCard>
 
         <Fade in={mounted} timeout={600}>
           <Box>
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Status" value="Active" subtitle="Account" color="success" /></Grid>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Member Since" value={new Date(user.createdAt).toLocaleDateString()} subtitle="" /></Grid>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Role" value={user.role || 'User'} subtitle="Current" /></Grid>
-              <Grid item xs={12} sm={6} md={3}><StatCard title="Profile" value={user.name || 'N/A'} subtitle={user.email || 'No email'} /></Grid>
-            </Grid>
+            <MotionBox
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <MotionGrid item xs={12} sm={6} md={3}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 }}
+                >
+                  <StatCard title="Status" value="Active" subtitle="Account" color="success" />
+                </MotionGrid>
+                <MotionGrid item xs={12} sm={6} md={3}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.2 }}
+                >
+                  <StatCard title="Member Since" value={new Date(user.createdAt).toLocaleDateString()} subtitle="" />
+                </MotionGrid>
+                <MotionGrid item xs={12} sm={6} md={3}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.3 }}
+                >
+                  <StatCard title="Role" value={user.role || 'User'} subtitle="Current" />
+                </MotionGrid>
+                <MotionGrid item xs={12} sm={6} md={3}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.4 }}
+                >
+                  <StatCard title="Profile" value={user.name || 'N/A'} subtitle={user.email || 'No email'} />
+                </MotionGrid>
+              </Grid>
+            </MotionBox>
 
             {isPro && (
-              <AIProfileCard elevation={0} sx={{ p: 3, mb: 4, background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%)' }}>
+              <ProfileCard 
+                elevation={0} 
+                sx={{ 
+                  p: 3, 
+                  mb: 4, 
+                  background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%)',
+                  border: '1px solid rgba(255, 215, 0, 0.3)'
+                }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              >
                 <Typography variant="h5" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <StarIcon sx={{ color: '#FFD700' }} />
-                  <GradientText>Pro Analytics</GradientText>
+                  <Box component="span" sx={{ color: '#F9DBBA', fontWeight: 700 }}>Pro Analytics</Box>
                 </Typography>
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={4}>
-                    <AIProfileCard elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%)' }}>
-                      <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                  <MotionGrid item xs={12} md={4}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                  >
+                    <InfoCard 
+                      elevation={2} 
+                      sx={{ 
+                        p: 3, 
+                        textAlign: 'center', 
+                        background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)'
+                      }}
+                      component={motion.div}
+                      whileHover={{ y: -5, scale: 1.02 }}
+                    >
+                      <Typography variant="h3" sx={{ color: '#F9DBBA', fontWeight: 'bold' }}>
                         89
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                      <Typography variant="body1" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>
                         Events Organized
                       </Typography>
-                    </AIProfileCard>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <AIProfileCard elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #81C784 0%, #66BB6A 100%)' }}>
-                      <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                    </InfoCard>
+                  </MotionGrid>
+                  <MotionGrid item xs={12} md={4}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.7 }}
+                  >
+                    <InfoCard 
+                      elevation={2} 
+                      sx={{ 
+                        p: 3, 
+                        textAlign: 'center', 
+                        background: 'linear-gradient(135deg, #66BB6A 0%, #388E3C 100%)'
+                      }}
+                      component={motion.div}
+                      whileHover={{ y: -5, scale: 1.02 }}
+                    >
+                      <Typography variant="h3" sx={{ color: '#F9DBBA', fontWeight: 'bold' }}>
                         4.9
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                      <Typography variant="body1" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>
                         Average Rating
                       </Typography>
-                    </AIProfileCard>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <AIProfileCard elevation={2} sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #FFB74D 0%, #FFA726 100%)' }}>
-                      <Typography variant="h3" sx={{ color: '#fff', fontWeight: 'bold' }}>
+                    </InfoCard>
+                  </MotionGrid>
+                  <MotionGrid item xs={12} md={4}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.8 }}
+                  >
+                    <InfoCard 
+                      elevation={2} 
+                      sx={{ 
+                        p: 3, 
+                        textAlign: 'center', 
+                        background: 'linear-gradient(135deg, #FFA726 0%, #F57C00 100%)'
+                      }}
+                      component={motion.div}
+                      whileHover={{ y: -5, scale: 1.02 }}
+                    >
+                      <Typography variant="h3" sx={{ color: '#F9DBBA', fontWeight: 'bold' }}>
                         567
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                      <Typography variant="body1" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>
                         Total Attendees
                       </Typography>
-                    </AIProfileCard>
-                  </Grid>
+                    </InfoCard>
+                  </MotionGrid>
                 </Grid>
-              </AIProfileCard>
+              </ProfileCard>
             )}
 
-            <AIProfileCard elevation={0} sx={{ p: 3, mb: 4 }}>
+            <ProfileCard 
+              elevation={0} 
+              sx={{ p: 3, mb: 4 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.9 }}
+            >
               <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <PersonIcon sx={{ color: '#fff' }} />
-                <GradientText>Advanced Features</GradientText>
+                <PersonIcon sx={{ color: '#5B99C2' }} />
+                <Box component="span" sx={{ color: '#F9DBBA', fontWeight: 700 }}>Advanced Features</Box>
                 {!isPro && (
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', ml: 1 }}>
+                  <Typography variant="caption" sx={{ color: 'rgba(249, 219, 186, 0.6)', ml: 1 }}>
                     (Pro Only)
                   </Typography>
                 )}
@@ -313,77 +383,93 @@ const UserDashboard = () => {
               
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <AIButton 
-                    fullWidth
-                    variant="outlined"
-                    onClick={() => isPro ? navigate('/event-analytics') : handleProFeatureClick('Event Analytics')}
-                    sx={{ 
-                      opacity: isPro ? 1 : 0.6,
-                      filter: isPro ? 'none' : 'grayscale(50%)',
-                      minHeight: 60
-                    }}
+                  <MotionBox
+                    whileHover={isPro ? { scale: 1.02, y: -2 } : {}}
+                    whileTap={isPro ? { scale: 0.98 } : {}}
                   >
-                    <InsightsIcon sx={{ mr: 1 }} />
-                    Event Analytics
-                    {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
-                  </AIButton>
+                    <ActionButton 
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => isPro ? navigate('/event-analytics') : handleProFeatureClick('Event Analytics')}
+                      sx={{ 
+                        opacity: isPro ? 1 : 0.6,
+                        filter: isPro ? 'none' : 'grayscale(50%)',
+                        minHeight: 60
+                      }}
+                    >
+                      <InsightsIcon sx={{ mr: 1 }} />
+                      Event Analytics
+                      {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
+                    </ActionButton>
+                  </MotionBox>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <AIButton 
-                    fullWidth
-                    variant="outlined"
-                    onClick={() => isPro ? navigate('/priority-support') : handleProFeatureClick('Priority Support')}
-                    sx={{ 
-                      opacity: isPro ? 1 : 0.6,
-                      filter: isPro ? 'none' : 'grayscale(50%)',
-                      minHeight: 60
-                    }}
+                  <MotionBox
+                    whileHover={isPro ? { scale: 1.02, y: -2 } : {}}
+                    whileTap={isPro ? { scale: 0.98 } : {}}
                   >
-                    <SupportAgentIcon sx={{ mr: 1 }} />
-                    Priority Support
-                    {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
-                  </AIButton>
+                    <ActionButton 
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => isPro ? navigate('/priority-support') : handleProFeatureClick('Priority Support')}
+                      sx={{ 
+                        opacity: isPro ? 1 : 0.6,
+                        filter: isPro ? 'none' : 'grayscale(50%)',
+                        minHeight: 60
+                      }}
+                    >
+                      <SupportAgentIcon sx={{ mr: 1 }} />
+                      Priority Support
+                      {!isPro && <LockIcon sx={{ ml: 1, fontSize: 16 }} />}
+                    </ActionButton>
+                  </MotionBox>
                 </Grid>
               </Grid>
-            </AIProfileCard>
+            </ProfileCard>
 
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <GlassCard elevation={0} sx={{ p: 3, height: '100%' }}>
+              <MotionGrid item xs={12} md={6}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 1.0 }}
+              >
+                <InfoCard elevation={0} sx={{ p: 3, height: '100%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                    <PersonIcon sx={{ color: '#fff', fontSize: 28 }} />
-                    <GradientText variant="h6">Personal Information</GradientText>
+                    <PersonIcon sx={{ color: '#5B99C2', fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ color: '#F9DBBA', fontWeight: 700 }}>
+                      Personal Information
+                    </Typography>
                   </Box>
                   
                   <InfoBox>
-                    <EmailIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                    <EmailIcon sx={{ color: '#5B99C2' }} />
                     <Box>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Email</Typography>
-                      <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.email}</Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Email</Typography>
+                      <Typography variant="body1" sx={{ color: '#F9DBBA', fontWeight: 500 }}>{user.email}</Typography>
                     </Box>
                   </InfoBox>
 
                   {user.phone && (
                     <InfoBox>
-                      <PhoneIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                      <PhoneIcon sx={{ color: '#5B99C2' }} />
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Phone</Typography>
-                        <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>{user.phone}</Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Phone</Typography>
+                        <Typography variant="body1" sx={{ color: '#F9DBBA', fontWeight: 500 }}>{user.phone}</Typography>
                       </Box>
                     </InfoBox>
                   )}
 
                   <InfoBox>
-                    <EventIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                    <EventIcon sx={{ color: '#5B99C2' }} />
                     <Box>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Role</Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Role</Typography>
                       <Chip 
                         label={user.role || 'User'} 
                         sx={{ 
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: '#fff',
+                          background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+                          color: '#F9DBBA',
                           fontWeight: 600,
-                          border: '1px solid rgba(255,255,255,0.3)',
+                          border: '1px solid rgba(91, 153, 194, 0.4)',
                         }} 
                         size="small" 
                       />
@@ -391,55 +477,74 @@ const UserDashboard = () => {
                   </InfoBox>
 
                   <InfoBox>
-                    <PersonIcon sx={{ color: 'rgba(255,255,255,0.95)' }} />
+                    <PersonIcon sx={{ color: '#5B99C2' }} />
                     <Box>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>Member Since</Typography>
-                      <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.8)' }}>Member Since</Typography>
+                      <Typography variant="body1" sx={{ color: '#F9DBBA', fontWeight: 500 }}>
                         {new Date(user.createdAt).toLocaleDateString()}
                       </Typography>
                     </Box>
                   </InfoBox>
-                </GlassCard>
-              </Grid>
+                </InfoCard>
+              </MotionGrid>
 
-              <Grid item xs={12} md={6}>
-                <GlassCard elevation={0} sx={{ p: 3, height: '100%' }}>
+              <MotionGrid item xs={12} md={6}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+              >
+                <InfoCard elevation={0} sx={{ p: 3, height: '100%' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                    <EventIcon sx={{ color: '#fff', fontSize: 28 }} />
-                    <GradientText variant="h6">Account Actions</GradientText>
+                    <EventIcon sx={{ color: '#5B99C2', fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ color: '#F9DBBA', fontWeight: 700 }}>
+                      Account Actions
+                    </Typography>
                   </Box>
                   
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <AIButton 
-                      variant="outlined" 
-                      fullWidth
-                      size="large"
-                      onClick={() => navigate('/me')}
-                      sx={{ justifyContent: 'flex-start', gap: 2 }}
+                    <MotionBox
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <PersonIcon />
-                      View Profile
-                    </AIButton>
+                      <ActionButton 
+                        variant="outlined" 
+                        fullWidth
+                        size="large"
+                        onClick={() => navigate('/me')}
+                        sx={{ justifyContent: 'flex-start', gap: 2 }}
+                      >
+                        <PersonIcon />
+                        View Profile
+                      </ActionButton>
+                    </MotionBox>
                     
-                    <AIButton 
-                      variant="outlined" 
-                      fullWidth
-                      size="large"
-                      onClick={handleLogout}
-                      sx={{ 
-                        justifyContent: 'flex-start', 
-                        gap: 2,
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.2) 100%)',
-                        }
-                      }}
+                    <MotionBox
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <EventIcon />
-                      Logout
-                    </AIButton>
+                      <ActionButton 
+                        variant="outlined" 
+                        fullWidth
+                        size="large"
+                        onClick={handleLogout}
+                        sx={{ 
+                          justifyContent: 'flex-start', 
+                          gap: 2,
+                          border: '1px solid rgba(244, 67, 54, 0.5)',
+                          color: '#F9DBBA',
+                          '&:hover': {
+                            background: 'rgba(244, 67, 54, 0.15)',
+                            border: '1px solid rgba(244, 67, 54, 0.7)',
+                          }
+                        }}
+                      >
+                        <EventIcon />
+                        Logout
+                      </ActionButton>
+                    </MotionBox>
                   </Box>
-                </GlassCard>
-              </Grid>
+                </InfoCard>
+              </MotionGrid>
             </Grid>
           </Box>
         </Fade>

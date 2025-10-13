@@ -1,96 +1,23 @@
 import * as React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Container, CssBaseline, Box, Typography, TextField, Button } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
-import { Event as EventIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import EventAvailableRoundedIcon from '@mui/icons-material/EventAvailableRounded';
+import PersonAddRoundedIcon from '@mui/icons-material/PersonAddRounded';
+import { motion } from 'motion/react';
 import { register } from '../api/auth';
+import AuthLayout from '../components/layout/AuthLayout';
+import { formContainerVariants, formFieldVariants } from '../utils/motionVariants';
 
-// AI-themed styled components
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`;
-
-const float = keyframes`
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-20px) rotate(5deg); }
-  66% { transform: translateY(-10px) rotate(-5deg); }
-`;
-
-const BackgroundContainer = styled(Box)(({ theme }) => ({
-  minHeight: '100vh',
-  background: 'linear-gradient(-45deg, #667eea, #764ba2, #667eea, #764ba2)',
-  backgroundSize: '400% 400%',
-  animation: `${gradientShift} 15s ease infinite`,
-  position: 'relative',
-  overflow: 'hidden',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: theme.spacing(2),
-}));
-
-const FloatingIcon = styled(Box)(({ size = '60px', top, bottom, left, right, duration = '6s' }) => ({
-  position: 'absolute',
-  top,
-  bottom,
-  left,
-  right,
-  fontSize: size,
-  animation: `${float} ${duration} ease-in-out infinite`,
-  opacity: 0.6,
-  pointerEvents: 'none',
-  color: 'rgba(255, 255, 255, 0.8)',
-}));
-
-const GlassPaper = styled(Box)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.1)',
-  backdropFilter: 'blur(20px)',
-  borderRadius: '24px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-  padding: theme.spacing(4),
-  maxWidth: '500px',
-  width: '100%',
-  position: 'relative',
-}));
-
-const AITextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    background: 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '12px',
-    '&:hover': {
-      background: 'rgba(255, 255, 255, 0.95)',
-    },
-    '&.Mui-focused': {
-      background: 'rgba(255, 255, 255, 1)',
-      boxShadow: '0 0 20px rgba(102, 126, 234, 0.3)',
-    }
-  },
-  '& .MuiInputLabel-root': {
-    fontWeight: 600,
-  }
-}));
-
-const AIButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  borderRadius: '12px',
-  padding: theme.spacing(1.5, 3),
-  fontWeight: 700,
-  fontSize: '1rem',
-  textTransform: 'none',
-  boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-  '&:hover': {
-    background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 12px 30px rgba(102, 126, 234, 0.4)',
-  },
-  '&:disabled': {
-    background: 'rgba(102, 126, 234, 0.5)',
-  }
-}));
+const MotionButton = motion(Button);
 
 export default function UserRegistration() {
   const navigate = useNavigate();
@@ -109,138 +36,195 @@ export default function UserRegistration() {
       if (res.token) localStorage.setItem('token', res.token);
       navigate('/me');
     } catch (e) {
-      setError(e?.response?.data?.error || 'Registration failed');
+      setError(e?.response?.data?.error || 'Registration failed. Please review your details.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <BackgroundContainer>
-      <FloatingIcon size="100px" top="15%" left="10%" duration="8s">
-        <EventIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-      <FloatingIcon size="80px" top="25%" right="15%" duration="6s">
-        <EventIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-      <FloatingIcon size="60px" bottom="20%" left="15%" duration="7s">
-        <EventIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-      <FloatingIcon size="90px" bottom="15%" right="20%" duration="9s">
-        <EventIcon sx={{ fontSize: 'inherit' }} />
-      </FloatingIcon>
-
-      <GlassPaper>
-        <Box textAlign="center" sx={{ mb: 4 }}>
-          <Box sx={{ mb: 2 }}>
-            <EventIcon sx={{ 
-              fontSize: 48, 
-              color: 'white',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: '16px',
-              padding: '12px',
-              boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)'
-            }} />
-          </Box>
-          <Typography 
-            component="h1" 
-            variant="h4"
-            sx={{
-              fontWeight: 800,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              mb: 1
-            }}
-          >
-            Event Planner Registration
-          </Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
-            Join our elite network of event professionals
-          </Typography>
-        </Box>
-
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <AITextField 
-            margin="normal" 
-            required 
-            fullWidth 
-            id="name" 
-            label="Full Name" 
-            name="name" 
-            autoFocus 
-          />
-          <AITextField 
-            margin="normal" 
-            required 
-            fullWidth 
-            id="email" 
-            label="Email Address" 
-            name="email" 
-            autoComplete="email" 
-          />
-          <AITextField 
-            margin="normal" 
-            fullWidth 
-            id="phone" 
-            label="Phone Number" 
-            name="phone" 
-          />
-          <AITextField 
-            margin="normal" 
-            required 
-            fullWidth 
-            name="password" 
-            label="Password" 
-            type="password" 
-            id="password" 
-            autoComplete="new-password" 
-          />
-          
-          {error && (
-            <Box sx={{ 
-              mt: 2, 
-              p: 2, 
-              background: 'rgba(244, 67, 54, 0.1)', 
-              borderRadius: '12px',
-              border: '1px solid rgba(244, 67, 54, 0.3)'
-            }}>
-              <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
-                {error}
+    <AuthLayout
+      title="Create your Event Director workspace"
+      subtitle="Build detailed timelines, collaborate with vendors, and share polished deliverables."
+      description="Set up your account in under two minutes and start orchestrating unforgettable experiences."
+      sideContent={
+        <Stack spacing={3}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <EventAvailableRoundedIcon sx={{ fontSize: 32, color: 'secondary.light' }} />
+            <Typography variant="body1" color="text.secondary">
+              Curate events with precision, from headline talent to final load-out.
+            </Typography>
+          </Stack>
+          <Stack spacing={1.5}>
+            {['Client-ready proposals', 'Collaborative vendor boards', 'AI-assisted run sheets'].map((item) => (
+              <Stack
+                key={item}
+                direction="row"
+                spacing={1.5}
+                alignItems="center"
+                sx={{ color: 'text.secondary' }}
+              >
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: 'secondary.main',
+                  }}
+                />
+                <Typography variant="body2">{item}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Stack>
+      }
+      footer={
+        <Button
+          component={RouterLink}
+          to="/register"
+          startIcon={<ArrowBackRoundedIcon />}
+          sx={{ color: 'text.secondary' }}
+        >
+          Back to role directory
+        </Button>
+      }
+    >
+      <motion.div
+        variants={formContainerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <Stack component="form" onSubmit={handleSubmit} spacing={3}>
+          <motion.div variants={formFieldVariants}>
+            <Stack spacing={1}>
+              <Typography variant="h4" fontWeight={700} lineHeight={1.3}>
+                Personal details
               </Typography>
-            </Box>
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                We'll use this information to personalize your workspace and help teams reach you.
+              </Typography>
+            </Stack>
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="name" 
+              label="Full name" 
+              required 
+              autoFocus 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="email" 
+              label="Work email" 
+              type="email" 
+              required 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="phone" 
+              label="Phone number" 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="password" 
+              label="Password" 
+              type="password" 
+              required 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, type: 'spring', stiffness: 400 }}
+            >
+              <motion.div
+                animate={{
+                  x: [0, -10, 10, -10, 10, 0],
+                }}
+                transition={{ duration: 0.5 }}
+              >
+                <Alert severity="error" variant="outlined">
+                  {error}
+                </Alert>
+              </motion.div>
+            </motion.div>
           )}
 
-          <AIButton
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={loading}
-            sx={{ mt: 3, mb: 2 }}
-          >
-            {loading ? 'Creating Account...' : '🎯 Start Planning Events'}
-          </AIButton>
-
-          <Box textAlign="center" sx={{ mt: 3 }}>
-            <Button
-              component={Link}
-              to="/register"
-              startIcon={<ArrowBackIcon />}
+          <motion.div variants={formFieldVariants}>
+            <MotionButton
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={loading}
+              startIcon={!loading && <PersonAddRoundedIcon />}
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: '0 8px 20px rgba(91, 153, 194, 0.4)',
+              }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               sx={{
-                color: 'rgba(255,255,255,0.9)',
+                py: 1.5,
+                fontSize: '1rem',
                 fontWeight: 600,
                 textTransform: 'none',
-                '&:hover': {
-                  background: 'rgba(255,255,255,0.1)',
-                }
               }}
             >
-              Back to Role Selection
-            </Button>
-          </Box>
-        </Box>
-      </GlassPaper>
-    </BackgroundContainer>
+              {loading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <CircularProgress size={24} color="inherit" />
+                </motion.div>
+              ) : (
+                'Create workspace'
+              )}
+            </MotionButton>
+          </motion.div>
+
+          <motion.div variants={formFieldVariants}>
+            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              By continuing you agree to our platform terms and confirm you're authorized to represent your organization.
+            </Typography>
+          </motion.div>
+        </Stack>
+      </motion.div>
+    </AuthLayout>
   );
 }
