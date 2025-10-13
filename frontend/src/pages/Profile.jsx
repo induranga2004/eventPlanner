@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { me } from "../api/auth";
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link as RouterLink } from 'react-router-dom'
 import { 
   Container, 
   CssBaseline, 
@@ -43,6 +43,8 @@ import GroupIcon from '@mui/icons-material/Group'
 import EventIcon from '@mui/icons-material/Event'
 import MusicNoteIcon from '@mui/icons-material/MusicNote'
 import BuildIcon from '@mui/icons-material/Build'
+import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded'
+import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded'
 import TwoFactorSettings from '../components/TwoFactorSettings'
 
 // Create Motion components
@@ -80,9 +82,10 @@ const GlassPaper = styled(MotionBox)(() => ({
   boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
   position: 'relative',
   zIndex: 1,
-  width: '95%',
-  maxWidth: '1400px',
-  margin: '20px auto',
+  flex: 1,
+  width: '100%',
+  maxWidth: '1100px',
+  margin: '20px 0',
   textAlign: 'left',
 }))
 
@@ -148,6 +151,62 @@ const DetailCard = styled(MotionBox)(() => ({
   border: '1px solid rgba(91, 153, 194, 0.3)',
   padding: '25px',
   transition: 'all 0.3s ease',
+}))
+
+const LayoutWrapper = styled(Box)(() => ({
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'flex-start',
+  gap: '24px',
+  maxWidth: '1500px',
+  position: 'relative',
+}))
+
+const SideNav = styled(MotionBox)(() => ({
+  minWidth: '220px',
+  background: 'linear-gradient(180deg, rgba(26, 72, 112, 0.85) 0%, rgba(31, 49, 111, 0.85) 100%)',
+  borderRadius: '18px',
+  border: '1px solid rgba(91, 153, 194, 0.35)',
+  padding: '28px 24px',
+  boxShadow: '0 12px 30px rgba(15, 23, 42, 0.35)',
+  backdropFilter: 'blur(18px)',
+  position: 'sticky',
+  top: '40px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  color: '#F9DBBA',
+}))
+
+const NavHeading = styled(Typography)(() => ({
+  textTransform: 'uppercase',
+  letterSpacing: '0.12em',
+  fontSize: '12px',
+  color: 'rgba(249, 219, 186, 0.7)',
+}))
+
+const NavButton = styled(Button)(() => ({
+  justifyContent: 'flex-start',
+  gap: '12px',
+  borderRadius: '12px',
+  padding: '12px 16px',
+  fontWeight: 600,
+  textTransform: 'none',
+  background: 'linear-gradient(135deg, rgba(91, 153, 194, 0.25) 0%, rgba(31, 49, 111, 0.45) 100%)',
+  color: '#F9DBBA',
+  border: '1px solid rgba(91, 153, 194, 0.4)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    background: 'linear-gradient(135deg, rgba(91, 153, 194, 0.35) 0%, rgba(31, 49, 111, 0.6) 100%)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 12px 28px rgba(91, 153, 194, 0.35)',
+  },
+  '&.Mui-disabled': {
+    background: 'rgba(91, 153, 194, 0.2)',
+    color: 'rgba(249, 219, 186, 0.6)',
+    border: '1px solid rgba(91, 153, 194, 0.25)',
+  },
 }))
 
 const EditButton = styled(Button)(() => ({
@@ -268,6 +327,24 @@ export default function Profile() {
   const [editLoading, setEditLoading] = React.useState(false)
   const [editError, setEditError] = React.useState('')
   const navigate = useNavigate()
+  const [storedRole] = React.useState(() => (typeof window !== 'undefined' ? localStorage.getItem('userRole') : null))
+
+  const dashboardConfig = React.useMemo(() => {
+    const roleKey = (user?.role || storedRole || 'user').toLowerCase()
+
+    const roleMap = {
+      user: { path: '/user-dashboard', label: 'Event director dashboard' },
+      pro: { path: '/user-dashboard', label: 'Pro dashboard' },
+      musician: { path: '/musician-dashboard', label: 'Musician dashboard' },
+      musician_pro: { path: '/musician-dashboard', label: 'Musician Pro dashboard' },
+      music_band: { path: '/music_band-dashboard', label: 'Music band dashboard' },
+      venue: { path: '/venue-dashboard', label: 'Venue dashboard' },
+      lights: { path: '/lights-dashboard', label: 'Lighting dashboard' },
+      sounds: { path: '/sounds-dashboard', label: 'Sound dashboard' },
+    }
+
+    return roleMap[roleKey] || { path: '/user-dashboard', label: 'Main dashboard' }
+  }, [storedRole, user?.role])
 
   const handleEditProfile = () => {
     setEditData({ ...user })
@@ -340,11 +417,35 @@ export default function Profile() {
   return (
     <BackgroundContainer>
       <CssBaseline />
-      <GlassPaper
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+      <LayoutWrapper>
+        <SideNav
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <NavHeading>Quick access</NavHeading>
+          <NavButton
+            component={RouterLink}
+            to={dashboardConfig.path}
+            startIcon={<DashboardRoundedIcon />}
+          >
+            Back to {dashboardConfig.label}
+          </NavButton>
+          <NavButton
+            component={RouterLink}
+            to="/me"
+            startIcon={<PersonOutlineRoundedIcon />}
+            disabled
+          >
+            Profile overview
+          </NavButton>
+        </SideNav>
+
+        <GlassPaper
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
         <FloatingAvatar
           whileHover={{ scale: 1.1, rotate: 5 }}
           transition={{ type: 'spring', stiffness: 300 }}
@@ -615,6 +716,7 @@ export default function Profile() {
           )
         )}
       </GlassPaper>
+      </LayoutWrapper>
 
       {/* Edit Profile Dialog */}
       <EditDialog open={editOpen} onClose={handleCloseEdit} maxWidth="md" fullWidth>

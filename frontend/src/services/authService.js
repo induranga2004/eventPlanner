@@ -10,6 +10,10 @@ class AuthService {
     return await authAPI.register(formData);
   }
 
+  async requestPasswordReset(email) {
+    return await authAPI.requestPasswordReset(email);
+  }
+
   async getCurrentUser() {
     return await authAPI.me();
   }

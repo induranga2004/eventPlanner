@@ -99,3 +99,8 @@ export async function generateNewBackupCodes(token) {
   return data;
 }
 
+export async function requestPasswordReset(email) {
+  const { data } = await api.post('/auth/forgot-password', { email });
+  return data;
+}
+

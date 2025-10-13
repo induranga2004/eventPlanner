@@ -23,6 +23,7 @@ const SoundsRegistration = React.lazy(() => import('./auth/SoundsRegistration.js
 const Profile = React.lazy(() => import('./pages/Profile.jsx'))
 const PaymentSuccess = React.lazy(() => import('./pages/PaymentSuccess.jsx'))
 const PaymentCancel = React.lazy(() => import('./pages/PaymentCancel.jsx'))
+const ForgotPassword = React.lazy(() => import('./auth/ForgotPassword.jsx'))
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -38,6 +39,7 @@ const router = createBrowserRouter([
   { path: '/register/venue', element: <VenueRegistration /> },
   { path: '/register/lights', element: <LightsRegistration /> },
   { path: '/register/sounds', element: <SoundsRegistration /> },
+  { path: '/forgot-password', element: <ForgotPassword /> },
   { path: '/me', element: <Profile /> },
   { path: '/user-dashboard', element: <DashboardRouter /> },
   { path: '/musician-dashboard', element: <MusicianDashboard /> },

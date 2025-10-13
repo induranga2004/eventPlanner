@@ -33,6 +33,7 @@ router.post('/register', uploadFields, async (req, res) => {
 
   const { 
     email, password, role, name, phone, spotifyLink, venueAddress, capacity,
+    standardRate,
     // Music band fields
     bandName, genres, members, experience, equipment, bio, youtubeLink, instagramLink, facebookLink,
     // Lights and sounds fields
@@ -56,6 +57,14 @@ router.post('/register', uploadFields, async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 10);
 
   const userData = { email, passwordHash, role, name: displayName, phone };
+
+  if (standardRate !== undefined) {
+    const parsedRate = Number(standardRate);
+    if (Number.isNaN(parsedRate)) {
+      return res.status(400).json({ error: 'standardRate must be a number' });
+    }
+    userData.standardRate = parsedRate;
+  }
 
   try {
     if (req.files && req.files['photo']) {
@@ -160,6 +169,7 @@ router.post('/login', async (req, res) => {
       role: user.role,
       photo: user.photo,
       phone: user.phone,
+      standardRate: user.standardRate,
       twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt,
       // Include role-specific fields
@@ -197,15 +207,24 @@ router.put('/update-profile', async (req, res) => {
       'instagramLink', 'facebookLink', 'companyName', 'experience',
       'crewSize', 'equipmentDetails', 'genre', 'instruments', 'performanceStyle',
       'equipment', 'eventTypes', 'services', 'lightTypes', 'bandName',
-      'genres', 'members', 'youtubeLink', 'venueAddress', 'capacity', 'spotifyLink'
+      'genres', 'members', 'youtubeLink', 'venueAddress', 'capacity', 'spotifyLink',
+      'standardRate'
     ];
 
     // Update only provided fields
-    updateFields.forEach(field => {
+    for (const field of updateFields) {
       if (req.body[field] !== undefined) {
-        user[field] = req.body[field];
+        if (field === 'standardRate') {
+          const parsedRate = Number(req.body[field]);
+          if (Number.isNaN(parsedRate)) {
+            return res.status(400).json({ error: 'standardRate must be a number' });
+          }
+          user[field] = parsedRate;
+        } else {
+          user[field] = req.body[field];
+        }
       }
-    });
+    }
 
     // Validate email if it's being updated
     if (req.body.email && !validator.isEmail(req.body.email)) {
@@ -229,6 +248,7 @@ router.put('/update-profile', async (req, res) => {
       role: user.role,
       photo: user.photo,
       phone: user.phone,
+  standardRate: user.standardRate,
       twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt,
       // Include all profile fields

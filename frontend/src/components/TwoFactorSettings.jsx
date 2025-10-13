@@ -42,10 +42,12 @@ const GlassPaper = styled(Paper)(({ theme }) => ({
   boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
 }));
 
-const StatusChip = styled(Chip)(({ enabled }) => ({
-  backgroundColor: enabled ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 152, 0, 0.2)',
-  color: enabled ? '#4CAF50' : '#FF9800',
-  border: `1px solid ${enabled ? '#4CAF50' : '#FF9800'}`,
+const StatusChip = styled(Chip, {
+  shouldForwardProp: (prop) => prop !== 'isEnabled',
+})(({ isEnabled }) => ({
+  backgroundColor: isEnabled ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 152, 0, 0.2)',
+  color: isEnabled ? '#4CAF50' : '#FF9800',
+  border: `1px solid ${isEnabled ? '#4CAF50' : '#FF9800'}`,
   fontWeight: 'bold',
 }));
 
@@ -189,7 +191,7 @@ export default function TwoFactorSettings() {
             </Typography>
             <StatusChip
               label={status?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
-              enabled={status?.twoFactorEnabled}
+              isEnabled={status?.twoFactorEnabled}
               icon={status?.twoFactorEnabled ? <SecurityIcon /> : <WarningIcon />}
             />
             {status?.setupDate && (

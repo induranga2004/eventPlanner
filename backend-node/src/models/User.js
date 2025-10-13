@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['user', 'musician', 'music_band', 'venue', 'lights', 'sounds'], required: true },
   name: { type: String, required: true },
   phone: { type: String },
+  standardRate: { type: Number },
   
   // Two-Factor Authentication fields
   twoFactorSecret: { type: String }, // Encrypted TOTP secret

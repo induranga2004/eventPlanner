@@ -5,11 +5,11 @@ import {
   Box,
   Button,
   CircularProgress,
-  Grid,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import MusicNoteRoundedIcon from '@mui/icons-material/MusicNoteRounded';
 import HeadphonesRoundedIcon from '@mui/icons-material/HeadphonesRounded';
@@ -19,7 +19,7 @@ import AuthLayout from '../components/layout/AuthLayout';
 import FileUploadField from '../components/common/FileUploadField';
 import { formContainerVariants, formFieldVariants } from '../utils/motionVariants';
 
-const MotionButton = motion(Button);
+const MotionButton = motion.create(Button);
 
 export default function MusicianRegistration() {
   const navigate = useNavigate();
@@ -148,9 +148,25 @@ export default function MusicianRegistration() {
             />
           </motion.div>
 
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="password" 
+              label="Password" 
+              type="password" 
+              required 
+              fullWidth 
+              autoComplete="new-password"
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
           <motion.div variants={formFieldVariants}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <motion.div
                   whileHover={{ scale: 1.01 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -163,15 +179,17 @@ export default function MusicianRegistration() {
                   />
                 </motion.div>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <motion.div
                   whileHover={{ scale: 1.01 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                 >
                   <TextField 
-                    name="hourlyRate" 
-                    label="Standard rate" 
-                    placeholder="USD" 
+                    name="standardRate" 
+                    label="Standard fee (LKR)" 
+                    placeholder="e.g., 150000" 
+                    type="number"
+                    required
                     fullWidth 
                     InputLabelProps={{ shrink: true }}
                   />

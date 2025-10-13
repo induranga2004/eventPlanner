@@ -195,6 +195,22 @@ export default function SoundsRegistration() {
             />
           </motion.div>
 
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
+              name="standardRate" 
+              label="Starting fee (LKR)" 
+              placeholder="e.g., 160000" 
+              type="number"
+              required
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
           <motion.div variants={formFieldVariants}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>

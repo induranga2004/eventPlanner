@@ -184,6 +184,22 @@ export default function MusicBandRegistration() {
                   />
                 </motion.div>
               </Grid>
+              <Grid item xs={12} sm={6}>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                >
+                  <TextField 
+                    name="standardRate" 
+                    label="Starting fee (LKR)" 
+                    placeholder="e.g., 250000" 
+                    type="number"
+                    required
+                    fullWidth 
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </motion.div>
+              </Grid>
             </Grid>
           </motion.div>
 

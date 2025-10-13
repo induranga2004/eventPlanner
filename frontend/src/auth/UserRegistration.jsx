@@ -155,6 +155,22 @@ export default function UserRegistration() {
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
             <TextField 
+              name="standardRate" 
+              label="Event budget ceiling (LKR)" 
+              placeholder="e.g., 300000" 
+              type="number"
+              required
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={formFieldVariants}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <TextField 
               name="password" 
               label="Password" 
               type="password" 
