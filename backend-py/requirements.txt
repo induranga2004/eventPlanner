@@ -5,6 +5,7 @@ crewai
 openai
 python-dotenv
 pymongo
+httpx
 
 
 # pip install -r requirements.txt

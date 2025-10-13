@@ -47,7 +47,7 @@ export default function LightsRegistration() {
   return (
     <AuthLayout
       title="Illuminate events with Event Planner Studio"
-      subtitle="Connect with event directors, showcase your lighting expertise, and manage projects seamlessly."
+  subtitle="Connect with event planners, showcase your lighting expertise, and manage projects seamlessly."
       description="Join a network of lighting professionals and streamline your bookings, crew coordination, and equipment management."
       sideContent={
         <Stack spacing={3}>

@@ -44,9 +44,9 @@ export default function UserRegistration() {
 
   return (
     <AuthLayout
-      title="Create your Event Director workspace"
-      subtitle="Build detailed timelines, collaborate with vendors, and share polished deliverables."
-      description="Set up your account in under two minutes and start orchestrating unforgettable experiences."
+        title="Create your Event Planner workspace"
+        subtitle="Build detailed timelines, collaborate with vendors, and share polished deliverables."
+        description="Set up your account in under two minutes and start orchestrating unforgettable experiences."
       sideContent={
         <Stack spacing={3}>
           <Stack direction="row" spacing={2} alignItems="center">
@@ -149,21 +149,6 @@ export default function UserRegistration() {
             />
           </motion.div>
 
-          <motion.div 
-            variants={formFieldVariants}
-            whileHover={{ scale: 1.01 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-          >
-            <TextField 
-              name="standardRate" 
-              label="Event budget ceiling (LKR)" 
-              placeholder="e.g., 300000" 
-              type="number"
-              required
-              fullWidth 
-              InputLabelProps={{ shrink: true }}
-            />
-          </motion.div>
 
           <motion.div 
             variants={formFieldVariants}

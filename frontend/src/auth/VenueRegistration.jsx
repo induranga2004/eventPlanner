@@ -47,7 +47,7 @@ export default function VenueRegistration() {
   return (
     <AuthLayout
       title="List your venue on Event Planner Studio"
-      subtitle="Connect with event directors, showcase your space, and streamline bookings."
+  subtitle="Connect with event planners, showcase your space, and streamline bookings."
       description="Join a network of premiere venues and manage inquiries, holds, and contracts in one platform."
       sideContent={
         <Stack spacing={3}>

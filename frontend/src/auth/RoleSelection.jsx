@@ -30,7 +30,7 @@ const MotionButton = motion(Button);
 const roles = [
   {
     key: 'user',
-    title: 'Event Director',
+    title: 'Event Planner',
     description: 'Design entire productions, coordinate talent, and manage clients with a single workspace.',
     icon: <EventAvailableRoundedIcon fontSize="large" />,
     highlights: ['All planning tools', 'Timeline automation', 'Client-ready exports'],
@@ -129,7 +129,7 @@ const RoleSelection = () => {
                     lineHeight: 1.6,
                   }}
                 >
-                  Event Planner Studio connects directors, performers, venues, and production crews in one professional network.
+                  Event Planner Studio connects planners, performers, venues, and production crews in one professional network.
                 </Typography>
               </Stack>
             </motion.div>

@@ -47,7 +47,7 @@ export default function SoundsRegistration() {
   return (
     <AuthLayout
       title="Amplify events with Event Planner Studio"
-      subtitle="Connect with event directors, showcase your audio expertise, and manage sound production seamlessly."
+  subtitle="Connect with event planners, showcase your audio expertise, and manage sound production seamlessly."
       description="Join a network of audio professionals and streamline bookings, equipment tracking, and project coordination."
       sideContent={
         <Stack spacing={3}>

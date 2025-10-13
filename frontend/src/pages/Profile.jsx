@@ -333,7 +333,7 @@ export default function Profile() {
     const roleKey = (user?.role || storedRole || 'user').toLowerCase()
 
     const roleMap = {
-      user: { path: '/user-dashboard', label: 'Event director dashboard' },
+  user: { path: '/user-dashboard', label: 'Event planner dashboard' },
       pro: { path: '/user-dashboard', label: 'Pro dashboard' },
       musician: { path: '/musician-dashboard', label: 'Musician dashboard' },
       musician_pro: { path: '/musician-dashboard', label: 'Musician Pro dashboard' },

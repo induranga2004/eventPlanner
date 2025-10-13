@@ -24,6 +24,7 @@ app.use('/api/auth', require('./src/auth/auth.routes'));
 app.use('/api/2fa', require('./src/routes/twoFactor'));
 app.use('/api/subscription', require('./src/routes/subscription'));
 app.use('/api/test', require('./src/routes/test'));
+app.use('/api/vendors', require('./src/routes/vendors'));
 app.use('/api', require('./src/auth/protected.routes'));
 
 // 404 for other /api routes

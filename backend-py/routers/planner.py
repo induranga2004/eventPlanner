@@ -23,6 +23,7 @@ from planner.service import (
     generate_dynamic_costs,
 )
 from agents.venue_finder import find_venues
+from services.vendor_client import fetch_vendor_catalog, build_vendor_recommendations
 
 router = APIRouter(prefix="/campaigns", tags=["planner"])
 
@@ -86,6 +87,9 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     for plan in existing_plans:
         db.delete(plan)
     db.flush()
+
+    vendor_catalog = fetch_vendor_catalog()
+    vendor_recommendations = build_vendor_recommendations(vendor_catalog, body.attendees_estimate)
 
     # Generate concepts and persist
     concept_list: List[Concept] = []
@@ -163,6 +167,8 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             "recommended_lead_days": recommended_lead_days,
             "venue_booking_risk": risk,
             "venue_booking_note": risk_note,
+            "vendor_catalog": vendor_catalog,
+            "recommended_partners": vendor_recommendations,
         }
     )
     return out

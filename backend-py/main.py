@@ -144,10 +144,6 @@ if __name__ == "__main__":
     import uvicorn
     # Use 1800 to match your frontend .env (VITE_API_BASE=http://127.0.0.1:1800)
     uvicorn.run("main:app", host="127.0.0.1", port=1800, reload=True)
-    title="Event Planner AI Backend",
-    description="AI-powered backend for event planning and social media content generation",
-    version="1.0.0"
-)
 
 # Add CORS middleware for frontend integration
 app.add_middleware(

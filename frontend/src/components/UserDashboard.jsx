@@ -10,6 +10,7 @@ import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription, useProAccess } from '../hooks/useSubscription';
 import EventIcon from '@mui/icons-material/Event';
+import PlaylistAddCheckRoundedIcon from '@mui/icons-material/PlaylistAddCheckRounded';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -209,6 +210,17 @@ const UserDashboard = () => {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
+              <ActionButton 
+                variant="contained" 
+                size="large"
+                onClick={() => navigate('/planner')}
+                component={motion.button}
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <PlaylistAddCheckRoundedIcon sx={{ mr: 1 }} />
+                Plan an event
+              </ActionButton>
               <ActionButton 
                 variant="contained" 
                 size="large"

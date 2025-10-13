@@ -27,6 +27,23 @@ function Timeline({ eventDate, items }) {
   );
 }
 
+function formatCurrency(value) {
+  const n = Number(value || 0)
+  if (!n) return null
+  return `LKR ${n.toLocaleString()}`
+}
+
+function toListText(value) {
+  if (!value) return null
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join(', ')
+  }
+  if (typeof value === 'string') {
+    return value
+  }
+  return null
+}
+
 export default function PlannerResults({ data, campaignId }) {
   const [selecting, setSelecting] = useState(null);
 
@@ -35,6 +52,16 @@ export default function PlannerResults({ data, campaignId }) {
     const ppl = data?.event?.attendees || 1;
     return Math.round(total / ppl);
   }, [data]);
+
+  const vendorCatalog = data?.derived?.vendor_catalog || {};
+  const recommendedPartners = data?.derived?.recommended_partners || {};
+  const vendorLabels = {
+    venues: 'Venues',
+    soloMusicians: 'Solo musicians',
+    ensembles: 'Music ensembles',
+    lighting: 'Lighting designers',
+    sound: 'Sound specialists',
+  };
 
   const onSelect = async (cid) => {
     try {
@@ -154,6 +181,67 @@ export default function PlannerResults({ data, campaignId }) {
         <h3>Timeline</h3>
         <Timeline eventDate={data.event?.date} items={data.timeline} />
       </div>
+
+      {(Object.keys(recommendedPartners).length > 0 || Object.keys(vendorCatalog).length > 0) && (
+        <div>
+          <h3>Recommended partners</h3>
+          <div style={{ display: 'grid', gap: 16 }}>
+            {Object.keys(vendorLabels).map((key) => {
+              const preferred = recommendedPartners[key] || [];
+              const fallback = vendorCatalog[key] || [];
+              const providers = (preferred.length ? preferred : fallback).slice(0, 3);
+              if (!providers.length) return null;
+
+              return (
+                <div key={key} style={{ border: '1px solid #eee', borderRadius: 12, padding: 14 }}>
+                  <h4 style={{ marginTop: 0 }}>{vendorLabels[key]}</h4>
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {providers.map((vendor) => {
+                      const rate = formatCurrency(vendor.standardRate || vendor.avg_cost_lkr);
+                      const capacity = vendor.capacity;
+                      const specialties =
+                        toListText(vendor.services) ||
+                        toListText(vendor.eventTypes) ||
+                        toListText(vendor.genres);
+
+                      return (
+                        <div key={vendor.id || vendor.email || vendor.name} style={{ border: '1px solid #f1f1f1', borderRadius: 10, padding: 12 }}>
+                          <div style={{ fontWeight: 600 }}>{vendor.name || vendor.companyName || 'Vendor'}</div>
+                          <div style={{ fontSize: 14, opacity: 0.85 }}>
+                            {vendor.role ? vendor.role.replace('_', ' ') : 'partner'}
+                          </div>
+                          <div style={{ fontSize: 14, marginTop: 6 }}>
+                            {rate ? `Rate: ${rate}` : 'Rate: Contact for quote'}
+                          </div>
+                          {capacity ? (
+                            <div style={{ fontSize: 14 }}>Capacity: {capacity}</div>
+                          ) : null}
+                          {specialties ? (
+                            <div style={{ fontSize: 13, opacity: 0.85 }}>Specialties: {specialties}</div>
+                          ) : null}
+                          {vendor.website || vendor.spotifyLink ? (
+                            <div style={{ fontSize: 13, marginTop: 6 }}>
+                              {vendor.website ? (
+                                <a href={vendor.website} target="_blank" rel="noreferrer">Website</a>
+                              ) : null}
+                              {vendor.spotifyLink ? (
+                                <>
+                                  {' '}
+                                  <a href={vendor.spotifyLink} target="_blank" rel="noreferrer">Listen</a>
+                                </>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

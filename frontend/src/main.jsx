@@ -1,20 +1,20 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material'
-import App from './App.jsx'
+import { createBrowserRouter, RouterProvider, useNavigate } from 'react-router-dom'
 import { ThemeProvider, CssBaseline } from '@mui/material'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import MusicianDashboard from './components/MusicianDashboard'
 import MusicianProDashboard from './components/MusicianProDashboard'
 import VenueDashboard from './components/VenueDashboard'
-import UserDashboard from './components/UserDashboard'
 import DashboardRouter from './components/DashboardRouter'
 import MusicBandDashboard from './components/MusicBandDashboard'
 import LightsDashboard from './components/LightsDashboard'
 import SoundsDashboard from './components/SoundsDashboard'
 import { SubscriptionProvider } from './hooks/useSubscription'
+import ErrorBoundary from './components/ErrorBoundary'
+import theme from './theme'
+
+const PlannerApp = React.lazy(() => import('./App.jsx'))
 const SignIn = React.lazy(() => import('./auth/SignIn.jsx'))
 const RoleSelection = React.lazy(() => import('./auth/RoleSelection.jsx'))
 const UserRegistration = React.lazy(() => import('./auth/UserRegistration.jsx'))
@@ -27,14 +27,26 @@ const Profile = React.lazy(() => import('./pages/Profile.jsx'))
 const PaymentSuccess = React.lazy(() => import('./pages/PaymentSuccess.jsx'))
 const PaymentCancel = React.lazy(() => import('./pages/PaymentCancel.jsx'))
 const ForgotPassword = React.lazy(() => import('./auth/ForgotPassword.jsx'))
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import ErrorBoundary from './components/ErrorBoundary';
-import theme from './theme';
+
+const RootRedirect = () => {
+  const navigate = useNavigate()
+
+  React.useEffect(() => {
+    const userRole = localStorage.getItem('userRole')
+
+    if (userRole) {
+      navigate(`/${userRole}-dashboard`, { replace: true })
+    } else {
+      navigate('/login', { replace: true })
+    }
+  }, [navigate])
+
+  return null
+}
 
 const router = createBrowserRouter([
-  { path: '/', element: <App /> },
-  { path: '/planner', element: <App /> },
+  { path: '/', element: <RootRedirect /> },
+  { path: '/planner', element: <PlannerApp /> },
   { path: '/login', element: <SignIn /> },
   { path: '/register', element: <RoleSelection /> },
   { path: '/register/user', element: <UserRegistration /> },
@@ -47,6 +59,7 @@ const router = createBrowserRouter([
   { path: '/me', element: <Profile /> },
   { path: '/user-dashboard', element: <DashboardRouter /> },
   { path: '/musician-dashboard', element: <MusicianDashboard /> },
+  { path: '/musician-pro-dashboard', element: <MusicianProDashboard /> },
   { path: '/music_band-dashboard', element: <MusicBandDashboard /> },
   { path: '/venue-dashboard', element: <VenueDashboard /> },
   { path: '/lights-dashboard', element: <LightsDashboard /> },
@@ -54,26 +67,6 @@ const router = createBrowserRouter([
   { path: '/payment/success', element: <PaymentSuccess /> },
   { path: '/payment/cancel', element: <PaymentCancel /> },
 ])
-
-const App = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const userRole = localStorage.getItem('userRole'); // Assuming role is stored in localStorage after login
-    console.log('User Role:', userRole); // Debugging: Log the user role
-
-    if (userRole) {
-      navigate(`/${userRole}-dashboard`); // Dynamically navigate to the relevant dashboard
-    } else {
-      console.log('No role found, navigating to login'); // Debugging
-      navigate('/login'); // Redirect to login if no role is found
-    }
-  }, [navigate]);
-
-  return <RouterProvider router={router} />;
-};
-
-export default App;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -88,4 +81,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       </SubscriptionProvider>
     </ThemeProvider>
   </React.StrictMode>
-);
+)
