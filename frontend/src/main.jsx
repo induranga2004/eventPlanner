@@ -1,6 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import './index.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material'
+import App from './App.jsx'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import MusicianDashboard from './components/MusicianDashboard'
@@ -30,7 +33,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import theme from './theme';
 
 const router = createBrowserRouter([
-  { path: '/', element: <SignIn /> },
+  { path: '/', element: <App /> },
+  { path: '/planner', element: <App /> },
   { path: '/login', element: <SignIn /> },
   { path: '/register', element: <RoleSelection /> },
   { path: '/register/user', element: <UserRegistration /> },

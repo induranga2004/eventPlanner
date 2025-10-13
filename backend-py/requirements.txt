@@ -1,8 +1,10 @@
 fastapi
 uvicorn
+sqlalchemy
 crewai
 openai
 python-dotenv
+pymongo
 
 
 # pip install -r requirements.txt
