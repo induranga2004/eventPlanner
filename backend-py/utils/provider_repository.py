@@ -179,11 +179,18 @@ def list_lighting(city: Optional[str], limit: int = 20) -> List[Dict[str, Any]]:
     docs = _query_users("lights", city=city, limit=limit)
     providers: List[Dict[str, Any]] = []
     for doc in docs:
+        # Ensure services is always a list
+        services = doc.get("services")
+        if isinstance(services, str):
+            services = [services]
+        elif not isinstance(services, list):
+            services = None
+            
         providers.append(
             {
                 "name": _normalise_name(doc),
                 "address": _coalesce(doc, ("address", "city")),
-                "services": doc.get("services"),
+                "services": services,
                 "crew_size": _to_int(doc.get("crewSize")),
                 "website": _coalesce(doc, _WEBSITE_FIELDS),
                 "contact": _coalesce(doc, _CONTACT_FIELDS),
@@ -241,10 +248,17 @@ def list_sound_specialists(city: Optional[str] = None, limit: int = 20) -> List[
     docs = _query_users("sound_specialist", city=city, limit=limit)
     specialists: List[Dict[str, Any]] = []
     for doc in docs:
+        # Ensure services is always a list
+        services = doc.get("services")
+        if isinstance(services, str):
+            services = [services]
+        elif not isinstance(services, list):
+            services = None
+            
         specialists.append(
             {
                 "name": _normalise_name(doc) or doc.get("companyName"),
-                "services": doc.get("services"),
+                "services": services,
                 "crew_size": _to_int(doc.get("crewSize")),
                 "standard_rate_lkr": _to_int(doc.get("standardRate")),
                 "website": _coalesce(doc, _WEBSITE_FIELDS),

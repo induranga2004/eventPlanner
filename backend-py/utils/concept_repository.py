@@ -394,7 +394,17 @@ def list_concepts(limit: Optional[int] = None) -> List[Concept]:
     fallback_base = _fallback_concept(context)
     requested = limit if limit and limit > 0 else 1
     fallbacks = []
+    
+    # Define 4 unique cost distribution strategies
+    split_variations = [
+        {"venue": 0.40, "music": 0.35, "lighting": 0.15, "sound": 0.10},  # Venue-focused
+        {"venue": 0.30, "music": 0.45, "lighting": 0.15, "sound": 0.10},  # Music-heavy
+        {"venue": 0.35, "music": 0.30, "lighting": 0.25, "sound": 0.10},  # Lighting showcase
+        {"venue": 0.30, "music": 0.35, "lighting": 0.15, "sound": 0.20},  # Premium sound
+    ]
+    
     for i in range(requested):
+        split_idx = i % len(split_variations)
         variant = Concept(
             concept_id=f"{fallback_base.concept_id}-{i+1}",
             title=f"{fallback_base.title} #{i+1}",
@@ -405,7 +415,7 @@ def list_concepts(limit: Optional[int] = None) -> List[Concept]:
             sound_profile=fallback_base.sound_profile,
             experience_notes=fallback_base.experience_notes,
             target_pp_lkr=fallback_base.target_pp_lkr,
-            cost_split=dict(fallback_base.cost_split),
+            cost_split=dict(split_variations[split_idx]),
             assumption_prompts=fallback_base.assumption_prompts,
             default_features=list(fallback_base.default_features),
             providers=dict(fallback_base.providers),
@@ -432,7 +442,45 @@ def get_concept(concept_id: str) -> Concept:
         except ConceptGenerationUnavailable as exc:
             logger.warning("Unable to generate concept %s via AI, using fallback (%s)", concept_id, exc)
 
-    fallback = _fallback_concept(context)
-    if fallback.concept_id == concept_id:
-        return fallback
+    # Check if this is a numbered fallback concept (e.g., fallback-live-showcase-2)
+    fallback_base = _fallback_concept(context)
+    if concept_id == fallback_base.concept_id:
+        return fallback_base
+    
+    # Check for numbered variations (fallback-live-showcase-1, fallback-live-showcase-2, etc.)
+    if concept_id.startswith(fallback_base.concept_id + "-"):
+        try:
+            # Extract the number from the concept_id
+            suffix = concept_id.split("-")[-1]
+            index = int(suffix) - 1  # Convert to 0-based index
+            
+            # Define 4 unique cost distribution strategies
+            split_variations = [
+                {"venue": 0.40, "music": 0.35, "lighting": 0.15, "sound": 0.10},  # Venue-focused
+                {"venue": 0.30, "music": 0.45, "lighting": 0.15, "sound": 0.10},  # Music-heavy
+                {"venue": 0.35, "music": 0.30, "lighting": 0.25, "sound": 0.10},  # Lighting showcase
+                {"venue": 0.30, "music": 0.35, "lighting": 0.15, "sound": 0.20},  # Premium sound
+            ]
+            
+            if 0 <= index < len(split_variations):
+                variant = Concept(
+                    concept_id=concept_id,
+                    title=f"{fallback_base.title} #{index+1}",
+                    tagline=fallback_base.tagline,
+                    venue_preference=fallback_base.venue_preference,
+                    music_focus=fallback_base.music_focus,
+                    lighting_style=fallback_base.lighting_style,
+                    sound_profile=fallback_base.sound_profile,
+                    experience_notes=fallback_base.experience_notes,
+                    target_pp_lkr=fallback_base.target_pp_lkr,
+                    cost_split=dict(split_variations[index % len(split_variations)]),
+                    assumption_prompts=fallback_base.assumption_prompts,
+                    default_features=list(fallback_base.default_features),
+                    providers=dict(fallback_base.providers),
+                    catering_style=fallback_base.catering_style,
+                )
+                return variant
+        except (ValueError, IndexError):
+            pass
+    
     raise KeyError(f"Unknown concept_id '{concept_id}'")

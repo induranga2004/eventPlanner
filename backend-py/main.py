@@ -15,6 +15,8 @@ from config.settings import load_environment
 from models.campaign import Campaign
 from routers.planner import router as planner_router
 from routers.venues import router as venues_router
+from routers.concept_names import router as concept_names_router
+from routers.providers import router as providers_router
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +59,17 @@ app.include_router(planner_router)
 # Venue suggestions:
 #   GET /venues/suggest?city=...&event_type?=musical&top_k=7
 app.include_router(venues_router)
+
+# Concept name generation:
+#   POST /planner/regenerate-name
+app.include_router(concept_names_router)
+
+# Provider selection endpoints:
+#   GET /planner/providers/venue?city=...&min_capacity=...&max_budget_lkr=...
+#   GET /planner/providers/music?city=...&genre=...&max_budget_lkr=...
+#   GET /planner/providers/lighting?city=...&max_budget_lkr=...
+#   GET /planner/providers/sound?city=...&max_budget_lkr=...
+app.include_router(providers_router)
 
 # --- Campaign Management Endpoints ---
 class CampaignCreate(BaseModel):

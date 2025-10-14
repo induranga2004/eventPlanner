@@ -83,8 +83,8 @@ def _round_and_fix(total: int, parts: List[Tuple[str, float]]) -> List[Tuple[str
 
 
 def concept_ids(n: int) -> List[str]:
-    concepts = list_concepts()
-    return [record.concept_id for record in concepts[: max(0, n)]]
+    concepts = list_concepts(limit=n)
+    return [record.concept_id for record in concepts]
 
 
 def _normalized_split(concept: Concept) -> Dict[str, float]:
