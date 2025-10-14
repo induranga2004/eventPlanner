@@ -1,5 +1,5 @@
 // frontend/src/pages/PlannerResults.jsx
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { selectConcept } from "../api/planner";
 
 function Currency({ value }) {
@@ -46,6 +46,16 @@ function toListText(value) {
 
 export default function PlannerResults({ data, campaignId }) {
   const [selecting, setSelecting] = useState(null);
+
+  const providersByConcept = useMemo(() => {
+    const map = new Map();
+    const providerPayload = data?.derived?.concept_providers || {};
+    (data?.concepts || []).forEach((concept) => {
+      const providers = providerPayload[concept.id] || concept.providers || {};
+      map.set(concept.id, providers);
+    });
+    return map;
+  }, [data]);
 
   const perPerson = useMemo(() => {
     const total = data?.concepts?.[0]?.total_lkr ?? 0;
@@ -119,17 +129,39 @@ export default function PlannerResults({ data, campaignId }) {
             <ul className="costs" style={{ listStyle: "none", padding: 0, margin: "10px 0", display: "grid", gap: 6 }}>
               {c.costs?.map((k) => (
                 <li key={k.category} style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span className="cat" style={{ textTransform: "capitalize" }}>{k.category}</span>
+                  <span className="cat" style={{ textTransform: "capitalize" }}>{k.category.replace(/_/g, ' ')}</span>
                   <span className="amt"><Currency value={k.amount_lkr} /></span>
                 </li>
               ))}
             </ul>
 
             <div className="assumptions" style={{ marginTop: 6 }}>
-              <div className="label" style={{ fontWeight: 600, marginBottom: 4 }}>Assumptions</div>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <div className="label" style={{ fontWeight: 600, marginBottom: 4 }}>Signature Notes</div>
+              <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4 }}>
                 {c.assumptions?.map((a, i) => <li key={i}>{a}</li>)}
               </ul>
+              <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.4, opacity: 0.85 }}>
+                <div><strong>Venue:</strong> {c.venue_preference || 'Curated stage experience'}</div>
+                {c.music_focus ? <div><strong>Music:</strong> {c.music_focus}</div> : null}
+                {c.lighting_style ? <div><strong>Lighting:</strong> {c.lighting_style}</div> : null}
+                {c.sound_profile ? <div><strong>Sound:</strong> {c.sound_profile}</div> : null}
+              </div>
+              {providersByConcept.get(c.id) && Object.keys(providersByConcept.get(c.id)).some((key) => (providersByConcept.get(c.id)[key] || []).length) ? (
+                <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Spotlight Talent</div>
+                  <div style={{ display: "grid", gap: 4 }}>
+                    {Object.entries(providersByConcept.get(c.id)).map(([key, items]) => {
+                      if (!items || !items.length) return null;
+                      const label = key.charAt(0).toUpperCase() + key.slice(1);
+                      return (
+                        <div key={key}>
+                          <span style={{ fontWeight: 600 }}>{label}:</span> {items.join(', ')}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <button

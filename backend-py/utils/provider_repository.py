@@ -13,9 +13,13 @@ except Exception:  # pragma: no cover - pymongo optional during tests
 logger = logging.getLogger(__name__)
 
 _ROLE_ALIASES: Dict[str, Tuple[str, ...]] = {
-    "venue": ("venue", "venues"),
-    "lights": ("lights", "lighting", "light_provider"),
+    "venue": ("venue", "venues", "venue host", "venue_host"),
+    "lights": ("lights", "lighting", "light_provider", "lighting designer"),
     "music": ("musician", "music_band", "band", "dj"),
+    "solo_musician": ("musician", "solo musician", "solo_musician", "solo-musician"),
+    "music_ensemble": ("music_band", "music ensemble", "music_ensemble", "ensemble", "band"),
+    "lighting_designer": ("lights", "lighting designer", "lighting", "light_provider", "lighting_designer"),
+    "sound_specialist": ("sounds", "sound specialist", "sound", "audio", "sound engineer", "sound_engineer"),
 }
 
 _CITY_FIELDS = ("city", "venueAddress", "address", "companyAddress", "base_city")
@@ -183,7 +187,79 @@ def list_lighting(city: Optional[str], limit: int = 20) -> List[Dict[str, Any]]:
                 "crew_size": _to_int(doc.get("crewSize")),
                 "website": _coalesce(doc, _WEBSITE_FIELDS),
                 "contact": _coalesce(doc, _CONTACT_FIELDS),
+                "standard_rate_lkr": _to_int(doc.get("standardRate")),
                 "source": "mongo_users",
             }
         )
     return providers
+
+
+def list_solo_musicians(city: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
+    docs = _query_users("solo_musician", city=city, limit=limit)
+    artists: List[Dict[str, Any]] = []
+    for doc in docs:
+        artists.append(
+            {
+                "id": str(doc.get("_id")) if doc.get("_id") is not None else None,
+                "name": _normalise_name(doc),
+                "genres": doc.get("genres") or doc.get("genre"),
+                "experience": doc.get("experience"),
+                "standard_rate_lkr": _to_int(doc.get("standardRate")),
+                "spotify": doc.get("spotifyLink"),
+                "instagram": doc.get("instagramLink"),
+                "website": _coalesce(doc, _WEBSITE_FIELDS),
+                "contact": _coalesce(doc, _CONTACT_FIELDS),
+                "source": "mongo_users",
+            }
+        )
+    return artists
+
+
+def list_music_ensembles(city: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
+    docs = _query_users("music_ensemble", city=city, limit=limit)
+    ensembles: List[Dict[str, Any]] = []
+    for doc in docs:
+        ensembles.append(
+            {
+                "id": str(doc.get("_id")) if doc.get("_id") is not None else None,
+                "name": _normalise_name(doc) or doc.get("bandName"),
+                "genres": doc.get("genres"),
+                "members": _to_int(doc.get("members")),
+                "experience": doc.get("experience"),
+                "standard_rate_lkr": _to_int(doc.get("standardRate")),
+                "youtube": doc.get("youtubeLink"),
+                "instagram": doc.get("instagramLink"),
+                "website": _coalesce(doc, _WEBSITE_FIELDS),
+                "contact": _coalesce(doc, _CONTACT_FIELDS),
+                "source": "mongo_users",
+            }
+        )
+    return ensembles
+
+
+def list_sound_specialists(city: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
+    docs = _query_users("sound_specialist", city=city, limit=limit)
+    specialists: List[Dict[str, Any]] = []
+    for doc in docs:
+        specialists.append(
+            {
+                "name": _normalise_name(doc) or doc.get("companyName"),
+                "services": doc.get("services"),
+                "crew_size": _to_int(doc.get("crewSize")),
+                "standard_rate_lkr": _to_int(doc.get("standardRate")),
+                "website": _coalesce(doc, _WEBSITE_FIELDS),
+                "contact": _coalesce(doc, _CONTACT_FIELDS),
+                "source": "mongo_users",
+            }
+        )
+    return specialists
+
+
+__all__ = [
+    "list_venues",
+    "find_venue_by_name",
+    "list_lighting",
+    "list_solo_musicians",
+    "list_music_ensembles",
+    "list_sound_specialists",
+]

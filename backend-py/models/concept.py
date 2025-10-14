@@ -10,12 +10,16 @@ class Concept(BaseModel):
 	title: str
 	tagline: str = ""
 	venue_preference: Optional[str] = None
-	catering_style: Optional[str] = None
+	music_focus: Optional[str] = None
+	lighting_style: Optional[str] = None
+	sound_profile: Optional[str] = None
 	experience_notes: str = ""
 	target_pp_lkr: int = 0
 	cost_split: Dict[str, float] = Field(default_factory=dict)
 	assumption_prompts: str = ""
 	default_features: List[str] = Field(default_factory=list)
+	providers: Dict[str, List[str]] = Field(default_factory=dict)
+	catering_style: Optional[str] = None  # Backwards compatibility shim
 
 	@validator("target_pp_lkr", pre=True, always=True)
 	def _coerce_target(cls, value: int) -> int:  # noqa: D417

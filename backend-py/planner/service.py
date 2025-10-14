@@ -9,7 +9,6 @@ from uuid import uuid4
 from agents.concept_generator import ConceptGenerationUnavailable
 from models.concept import Concept
 from utils.concept_repository import concept_notice, ensure_seed_concept, get_concept, list_concepts
-from utils.data_loader import load_concepts as _csv_load  # Fallback diagnostics
 
 MILESTONES = [
     (-30, "Vendor shortlist & RFPs"),
@@ -22,28 +21,41 @@ MILESTONES = [
 
 DEFAULT_EVENT_TYPE = "musical"
 
+DEFAULT_COST_SPLIT = {
+    "venue": 0.4,
+    "music": 0.35,
+    "lighting": 0.15,
+    "sound": 0.10,
+}
+
 
 def _default_concept() -> Optional[Concept]:
     try:
         seed = ensure_seed_concept()
         return seed
     except (ConceptGenerationUnavailable, RuntimeError):
-        concepts = [
-            Concept(
-                concept_id=record.concept_id,
-                title=record.title,
-                tagline=record.tagline,
-                venue_preference=record.venue_preference,
-                catering_style=record.catering_style,
-                experience_notes=record.experience_notes,
-                target_pp_lkr=record.target_pp_lkr,
-                cost_split=record.cost_split,
-                assumption_prompts=record.assumption_prompts,
-                default_features=record.default_features,
-            )
-            for record in _csv_load().values()
-        ]
-        return concepts[0] if concepts else None
+        pass
+
+    return Concept(
+        concept_id="baseline-live-showcase",
+        title="Baseline Live Showcase",
+        tagline="Local talent meets immersive staging.",
+        venue_preference="Versatile stage with pro production",
+        music_focus="Collaborative sets featuring soloists and ensembles",
+        lighting_style="Dynamic color washes with beam highlights",
+        sound_profile="Crystal vocals with deep rhythmic low-end",
+        experience_notes="Guests enjoy a curated flow of performers with engaging visuals.",
+        target_pp_lkr=2500,
+        cost_split=dict(DEFAULT_COST_SPLIT),
+        assumption_prompts="",
+        default_features=[
+            "Venue spotlight: Flagship partner",
+            "Lighting design: Immersive washes",
+            "Sound engineered for rich detail",
+        ],
+        providers={},
+        catering_style="",
+    )
 
 
 _DEFAULT_CONCEPT = _default_concept()
@@ -56,7 +68,7 @@ def _ensure_concept(concept_id: Optional[str]) -> Concept:
         except KeyError:
             pass
     if _DEFAULT_CONCEPT is None:
-        raise RuntimeError("No concepts available. Ensure concert_concepts.csv is populated.")
+        raise RuntimeError("No concepts available. Ensure provider data is accessible.")
     return _DEFAULT_CONCEPT
 
 
@@ -76,9 +88,12 @@ def concept_ids(n: int) -> List[str]:
 
 
 def _normalized_split(concept: Concept) -> Dict[str, float]:
-    split = concept.cost_split or {"venue": 0.4, "catering": 0.3, "production": 0.2, "logistics": 0.1}
-    total = sum(split.values()) or 1.0
-    return {k: v / total for k, v in split.items()}
+    raw_split = concept.cost_split or {}
+    filtered = {k: float(v) for k, v in raw_split.items() if k in DEFAULT_COST_SPLIT and float(v) > 0}
+    if not filtered:
+        filtered = dict(DEFAULT_COST_SPLIT)
+    total = sum(filtered.values()) or 1.0
+    return {k: v / total for k, v in filtered.items()}
 
 
 def generate_costs(total_budget_lkr: int, concept_id: Optional[str] = None) -> List[Tuple[str, int]]:
@@ -139,7 +154,9 @@ def pick_concept_details(concept_id: Optional[str]) -> Dict[str, str]:
         "title": concept.title,
         "tagline": concept.tagline,
         "venue_preference": concept.venue_preference,
-        "catering_style": concept.catering_style,
+        "music_focus": concept.music_focus,
+        "lighting_style": concept.lighting_style,
+        "sound_profile": concept.sound_profile,
         "experience_notes": concept.experience_notes,
     }
 
@@ -150,8 +167,9 @@ def pick_assumptions(concept_id: Optional[str]) -> List[str]:
         return concept.default_features
     return [
         f"Venue emphasis: {concept.venue_preference.replace('_', ' ').title()}" if concept.venue_preference else "Venue emphasis: headline-ready stage",
-        f"Catering style: {concept.catering_style.replace('_', ' ').title()}" if concept.catering_style else "Catering style: premium service",
-        concept.experience_notes or "Immersive live musical experience",
+        f"Music focus: {concept.music_focus}" if concept.music_focus else "Music focus: high-energy live sets",
+        f"Lighting style: {concept.lighting_style}" if concept.lighting_style else "Lighting style: dynamic LEDs and washes",
+        f"Sound profile: {concept.sound_profile}" if concept.sound_profile else "Sound profile: balanced mix for vocals and rhythm",
     ]
 
 
@@ -235,65 +253,37 @@ def calculate_venue_cost(venue_data: dict, attendees: int, concept_id: Optional[
     return base_cost
 
 
-def calculate_catering_cost(catering_data: dict, attendees: int, concept_id: Optional[str]) -> int:
-    concept = _ensure_concept(concept_id)
-    if not catering_data:
-        return int(_target_total(concept, attendees) * _fallback_weight(concept, "catering", 0.3))
-
-    per_person_keys = ["pp_cost_lkr", "per_person_lkr", "per_person_cost_lkr", "pp_lkr"]
-    for key in per_person_keys:
-        value = _as_int(catering_data.get(key), 0)
-        if value > 0 and attendees > 0:
-            return value * attendees
-
-    total_keys = ["package_total_lkr", "total_cost_lkr"]
-    for key in total_keys:
-        value = _as_int(catering_data.get(key), 0)
-        if value > 0:
-            return value
-
-    pp_min = _as_int(catering_data.get("pp_min_lkr"), 0)
-    pp_max = _as_int(catering_data.get("pp_max_lkr"), 0)
-
-    if pp_min > 0 and pp_max > 0 and attendees > 0:
-        weight = _fallback_weight(concept, "catering", 0.3)
-        blend = min(max(weight, 0.0), 1.0)
-        per_person = int(pp_min + (pp_max - pp_min) * blend)
-        return per_person * attendees
-
-    return int(_target_total(concept, attendees) * _fallback_weight(concept, "catering", 0.3))
-
-
 def generate_dynamic_costs(
     total_budget_lkr: int,
     concept_id: Optional[str],
     venue_data: dict = None,
-    catering_data: dict = None,
     attendees: int = 100,
 ) -> List[Tuple[str, int]]:
     concept = _ensure_concept(concept_id)
     split = _normalized_split(concept)
 
     venue_cost = calculate_venue_cost(venue_data, attendees, concept.concept_id)
-    catering_cost = calculate_catering_cost(catering_data, attendees, concept.concept_id)
+    remaining_budget = max(total_budget_lkr - venue_cost, 0)
 
-    fixed_costs = venue_cost + catering_cost
-    remaining_budget = max(total_budget_lkr - fixed_costs, 0)
+    other_weights = [(key, weight) for key, weight in split.items() if key != "venue"]
 
-    other_weights = {k: v for k, v in split.items() if k not in {"venue", "catering"}}
-    total_other_weight = sum(other_weights.values())
+    cost_breakdown: List[Tuple[str, int]] = [("venue", venue_cost)]
 
-    cost_breakdown: List[Tuple[str, int]] = [
-        ("venue", venue_cost),
-        ("catering", catering_cost),
-    ]
-
-    if remaining_budget > 0 and total_other_weight > 0:
-        normalized = [(k, weight / total_other_weight) for k, weight in other_weights.items()]
+    if other_weights:
+        total_other = sum(weight for _, weight in other_weights)
+        if total_other <= 0:
+            normalized = [(key, 1 / len(other_weights)) for key, _ in other_weights]
+        else:
+            normalized = [(key, weight / total_other) for key, weight in other_weights]
         cost_breakdown.extend(_round_and_fix(remaining_budget, normalized))
-    else:
-        for category in other_weights:
-            cost_breakdown.append((category, 0))
+    elif remaining_budget > 0:
+        category, amount = cost_breakdown[0]
+        cost_breakdown[0] = (category, amount + remaining_budget)
+
+    present = {category for category, _ in cost_breakdown}
+    for key, _ in other_weights:
+        if key not in present:
+            cost_breakdown.append((key, 0))
 
     return cost_breakdown
 
