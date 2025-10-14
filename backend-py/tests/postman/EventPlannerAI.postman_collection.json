@@ -1,0 +1,110 @@
+{
+  "info": {
+    "_postman_id": "7b2b0f2c-2b2a-4cb2-b0f3-3e6e0dd9e7a1",
+    "name": "Event Planner AI Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection to test health, intelligence analysis, background generation (L1), and harmonization (L2)."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": [""] }
+      }
+    },
+    {
+      "name": "Intelligence • Analyze Query",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mahinda mahaththaya with nelum kuluna colombo\",\n  \"target_platform\": \"social_media\",\n  \"size_preference\": \"square\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/intelligence/analyze", "host": ["{{baseUrl}}"], "path": ["api","intelligence","analyze"] }
+      }
+    },
+    {
+      "name": "Design • Start (L1 Background)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"campaign_id\": \"demo-campaign\",\n  \"event\": {\n    \"title\": \"City Night Concert\",\n    \"city\": \"Colombo\",\n    \"date\": \"2025-12-24\",\n    \"audience\": \"general\",\n    \"genre\": \"electronic\"\n  },\n  \"artists\": [\n    {\n      \"id\": \"a1\",\n      \"name\": \"Lead Artist\",\n      \"cutout_url\": \"https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png\"\n    }\n  ],\n  \"style_prefs\": {\n    \"mood\": \"neon\",\n    \"palette\": [\"#9D00FF\", \"#00FFD1\"],\n    \"sizes\": [\"square\"]\n  }\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/design/start", "host": ["{{baseUrl}}"], "path": ["api","design","start"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('render_id', json.render_id);",
+              "pm.collectionVariables.set('campaign_id', json.campaign_id);",
+              "const bg = json.variants && json.variants[0] && json.variants[0].layers && json.variants[0].layers.l1_background_url;",
+              "if (bg) pm.collectionVariables.set('bg_url', bg);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Design • Harmonize (L2 Compose)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"render_id\": \"{{render_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"size\": \"square\",\n  \"bg_url\": \"{{bg_url}}\",\n  \"selected_cutouts\": [\n    {\n      \"artist_id\": \"a1\",\n      \"url\": \"https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png\",\n      \"visible\": true,\n      \"bbox\": [400, 900, 400, 600],\n      \"z\": 3\n    }\n  ],\n  \"seed_harmonize\": 123\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/design/harmonize", "host": ["{{baseUrl}}"], "path": ["api","design","harmonize"] }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const bg = pm.collectionVariables.get('bg_url');",
+              "if (!bg || /^REPLACE_WITH/.test(bg)) {",
+              "  console.warn('bg_url is not set from L1. Run Start (L1 Background) first.');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('has l2_composite_url', function () { pm.expect(json.l2_composite_url).to.be.a('string'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Design • Analyze Quality",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"image_url\": \"{{bg_url}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/design/analyze-quality", "host": ["{{baseUrl}}"], "path": ["api","design","analyze-quality"] }
+      }
+    }
+  ]
+}

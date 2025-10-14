@@ -28,6 +28,12 @@ const PaymentSuccess = React.lazy(() => import('./pages/PaymentSuccess.jsx'))
 const PaymentCancel = React.lazy(() => import('./pages/PaymentCancel.jsx'))
 const ForgotPassword = React.lazy(() => import('./auth/ForgotPassword.jsx'))
 
+// AI Visual Composer pages from feature branch
+const Home = React.lazy(() => import('./pages/Home.jsx'))
+const Editor = React.lazy(() => import('./pages/Editor.jsx'))
+const Health = React.lazy(() => import('./pages/Health.jsx'))
+const Wizard = React.lazy(() => import('./pages/Wizard.jsx'))
+
 const RootRedirect = () => {
   const navigate = useNavigate()
 
@@ -66,6 +72,12 @@ const router = createBrowserRouter([
   { path: '/sounds-dashboard', element: <SoundsDashboard /> },
   { path: '/payment/success', element: <PaymentSuccess /> },
   { path: '/payment/cancel', element: <PaymentCancel /> },
+  // AI Visual Composer routes
+  { path: '/home', element: <Home /> },
+  { path: '/editor', element: <Editor /> },
+  { path: '/wizard', element: <Wizard /> },
+  { path: '/health', element: <Health /> },
+  { path: '/design', element: <Editor /> },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(

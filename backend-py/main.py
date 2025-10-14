@@ -5,8 +5,6 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from crewai import Agent, Task, Crew, Process
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 # --- Project imports (package-style) ---
@@ -18,29 +16,42 @@ from routers.venues import router as venues_router
 from routers.concept_names import router as concept_names_router
 from routers.providers import router as providers_router
 
-
 logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_environment()
 
-# Check for OpenAI API key (used by the CrewAI content demo and OpenAI-powered tools)
-# Check for required environment variables
+# Check for OpenAI API key
 if not os.getenv("OPENAI_API_KEY"):
     logger.warning(
         "OPENAI_API_KEY not found; AI-powered enhancements will rely on Mongo provider data only."
     )
 
-# --- FastAPI App Setup ---
+# Check for Cloudinary configuration (for AI visual composer features)
+AI_ENABLE_FLUX = os.getenv("AI_ENABLE_FLUX", "false").lower() == "true"
+CLOUDINARY_READY = all([
+    os.getenv("CLOUDINARY_CLOUD_NAME"),
+    os.getenv("CLOUDINARY_API_KEY"),
+    os.getenv("CLOUDINARY_API_SECRET"),
+])
+if not CLOUDINARY_READY:
+    logger.warning("Cloudinary not fully configured. AI visual features disabled. Set CLOUDINARY_* in .env.")
+
 app = FastAPI(
-    title="Musical Event Planner API",
-    description="Specialised planner for live musical performances with budgets, venues, catering, and CrewAI content agent.",
+    title="Event Planner API with AI Visual Composer",
+    description="Musical event planner with budgets, venues, catering, and AI-powered visual design tools.",
+    version="2.0.0"
 )
 
 # --- CORS ---
+default_origins = "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://127.0.0.1:5173"
+origins_str = os.getenv("CORS_ORIGIN", default_origins)
+origins = [o.strip() for o in origins_str.split(",") if o.strip()]
+origins.append("*")  # Allow all for development
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten in production
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,27 +60,26 @@ app.add_middleware(
 # --- Database initialization ---
 Base.metadata.create_all(bind=engine)
 
-# --- Mount Routers (real endpoints) ---
-# Planner endpoints:
-#   POST /campaigns/{campaign_id}/planner/generate
-#   GET  /campaigns/{campaign_id}/planner/results
-#   POST /campaigns/{campaign_id}/planner/select
+# --- Mount Existing Event Planner Routers ---
 app.include_router(planner_router)
-
-# Venue suggestions:
-#   GET /venues/suggest?city=...&event_type?=musical&top_k=7
 app.include_router(venues_router)
-
-# Concept name generation:
-#   POST /planner/regenerate-name
 app.include_router(concept_names_router)
-
-# Provider selection endpoints:
-#   GET /planner/providers/venue?city=...&min_capacity=...&max_budget_lkr=...
-#   GET /planner/providers/music?city=...&genre=...&max_budget_lkr=...
-#   GET /planner/providers/lighting?city=...&max_budget_lkr=...
-#   GET /planner/providers/sound?city=...&max_budget_lkr=...
 app.include_router(providers_router)
+
+# --- Mount New AI Visual Composer Routers ---
+try:
+    from routers.design import router as design_router
+    app.include_router(design_router, prefix="/api/design", tags=["design"])
+    logger.info("Mounted /api/design router (AI Visual Composer).")
+except Exception as e:
+    logger.warning(f"/api/design router not mounted: {e}")
+
+try:
+    from routers.intelligence import router as intelligence_router
+    app.include_router(intelligence_router, prefix="/api/intelligence", tags=["intelligence"])
+    logger.info("Mounted /api/intelligence router (AI Analysis).")
+except Exception as e:
+    logger.warning(f"/api/intelligence router not mounted: {e}")
 
 # --- Campaign Management Endpoints ---
 class CampaignCreate(BaseModel):
@@ -150,151 +160,27 @@ def generate_content(request: TopicRequest):
 
 @app.get("/", summary="Health Check")
 def read_root():
-    return {"status": "Musical Event Planner API is running"}
+    return {
+        "status": "Event Planner API is running",
+        "version": "2.0.0",
+        "services": ["event-planner", "visual-composer", "intelligent-analysis"],
+        "features": {
+            "event_planning": True,
+            "provider_matching": True,
+            "ai_enable_flux": AI_ENABLE_FLUX,
+            "cloudinary_configured": CLOUDINARY_READY,
+            "crewai_intelligence": True,
+            "mongodb_connected": bool(os.getenv("MONGO_URI")),
+        },
+        "endpoints": {
+            "planner": "/campaigns/*, /planner/*, /venues/*, /providers/*",
+            "design": "/api/design/*",
+            "intelligence": "/api/intelligence/*"
+        }
+    }
 
 # --- Dev runner ---
 if __name__ == "__main__":
     import uvicorn
     # Use 1800 to match your frontend .env (VITE_API_BASE=http://127.0.0.1:1800)
     uvicorn.run("main:app", host="127.0.0.1", port=1800, reload=True)
-
-# Add CORS middleware for frontend integration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# --- Health Check Endpoint ---
-@app.get("/", summary="Health Check")
-def health_check():
-    """
-    Basic health check endpoint to verify the API is running.
-    """
-    return {
-        "status": "Event Planner AI Backend is running",
-        "version": "1.0.0",
-        "services": ["event-planning", "post-generation", "content-optimization"]
-    }
-
-# =============================================================================
-# PLACEHOLDER ENDPOINTS FOR TEAM MEMBERS
-# =============================================================================
-
-# --- EVENT PLANNING ENDPOINTS (For Dhananjana) ---
-@app.post("/api/events/suggest-plan", summary="Get Event Planning Suggestions")
-def suggest_event_plan():
-    """
-    PLACEHOLDER: Dhananjana will implement this endpoint
-    - Generate event planning suggestions based on user requirements
-    - Input: event type, budget, attendees, etc.
-    - Output: AI-generated event plan with timeline, tasks, recommendations
-    """
-    return {"message": "Event planning endpoint - To be implemented by Dhananjana"}
-
-@app.post("/api/events/generate-checklist", summary="Generate Event Checklist")
-def generate_event_checklist():
-    """
-    PLACEHOLDER: Dhananjana will implement this endpoint
-    - Create customized event planning checklists
-    - Input: event details
-    - Output: Step-by-step checklist with timelines
-    """
-    return {"message": "Event checklist endpoint - To be implemented by Dhananjana"}
-
-# --- POST GENERATION ENDPOINTS (For Heshan) ---
-@app.post("/api/posts/generate-content", summary="Generate Social Media Posts")
-def generate_social_media_posts():
-    """
-    PLACEHOLDER: Heshan will implement this endpoint
-    - Generate engaging social media posts for events
-    - Input: event details, target platform, tone
-    - Output: AI-generated social media content
-    """
-    return {"message": "Post generation endpoint - To be implemented by Heshan"}
-
-@app.post("/api/posts/optimize-content", summary="Optimize Content for Platform")
-def optimize_content_for_platform():
-    """
-    PLACEHOLDER: Heshan will implement this endpoint
-    - Optimize existing content for specific social media platforms
-    - Input: base content, target platform
-    - Output: Platform-optimized content
-    """
-    return {"message": "Content optimization endpoint - To be implemented by Heshan"}
-
-# --- CONTENT SHARING ENDPOINTS (For Integration with Hirushan's work) ---
-@app.post("/api/sharing/prepare-content", summary="Prepare Content for Sharing")
-def prepare_content_for_sharing():
-    """
-    PLACEHOLDER: Integration endpoint for sharing functionality
-    - Prepare generated content for external sharing
-    - Input: generated content, sharing preferences
-    - Output: Formatted content ready for sharing APIs
-    """
-    return {"message": "Content sharing preparation endpoint - For integration with Hirushan's work"}
-
-# =============================================================================
-# UTILITY ENDPOINTS
-# =============================================================================
-
-@app.get("/api/templates", summary="Get Available Templates")
-def get_templates():
-    """
-    Get available event and content templates
-    """
-    return {
-        "event_templates": ["wedding", "corporate", "birthday", "conference"],
-        "content_templates": ["announcement", "invitation", "thank_you", "recap"]
-    }
-
-@app.get("/api/status", summary="Check AI Service Status")
-def check_ai_status():
-    """
-    Check if AI services (OpenAI) are accessible
-    """
-    try:
-        # Simple check to verify OpenAI API key exists
-        if os.getenv("OPENAI_API_KEY"):
-            return {"status": "AI services ready", "openai_configured": True}
-        else:
-            return {"status": "AI services not configured", "openai_configured": False}
-    except Exception as e:
-        return {"status": "Error checking AI services", "error": str(e)}
-
-# =============================================================================
-# INSTRUCTIONS FOR TEAM MEMBERS
-# =============================================================================
-"""
-TEAM MEMBER IMPLEMENTATION GUIDE:
-
-1. DHANANJANA (Event Planning):
-   - Implement logic in routers/events.py
-   - Create models in models/event.py
-   - Focus on: /api/events/suggest-plan and /api/events/generate-checklist
-
-2. HESHAN (AI Post Generator):
-   - Implement logic in routers/posts.py
-   - Create models in models/post.py
-   - Focus on: /api/posts/generate-content and /api/posts/optimize-content
-
-3. INTEGRATION POINTS:
-   - All generated content should be compatible with Hirushan's sharing system
-   - Use consistent data models across all endpoints
-
-4. TESTING:
-   - Test each endpoint individually before integration
-   - Use /api/status to verify AI services are working
-
-5. HOW TO ADD YOUR IMPLEMENTATION:
-   - Create your router file in routers/
-   - Create your models in models/
-   - Import and include your router in this main.py file
-   
-   Example:
-   from routers import events, posts
-   app.include_router(events.router, prefix="/api/events")
-   app.include_router(posts.router, prefix="/api/posts")
-"""
