@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Literal, Optional, Tuple, Dict
+from typing import List, Literal, Optional, Tuple, Dict, Any
 from uuid import uuid4
 
 SizeT = Literal["square", "story"]
@@ -122,3 +122,51 @@ class BatchGenerationResponse(BaseModel):
     campaign_id: str
     results: List[StartDesignResponse]
     processing_time: float
+
+
+class BackgroundGenerationRequest(BaseModel):
+    campaign_id: str
+    user_query: Optional[str] = None
+    count: int = Field(default=4, ge=1, le=8)
+    size: SizeT = "square"
+
+
+class BackgroundOption(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    image_url: str
+    prompt: str
+    model: Optional[str] = None
+    seed: Optional[int] = None
+    size: SizeT = "square"
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class BackgroundGenerationResponse(BaseModel):
+    campaign_id: str
+    render_id: str
+    bg_options: List[BackgroundOption]
+    prompt: str
+
+
+class SimpleHarmonizeRequest(BaseModel):
+    campaign_id: str
+    bg_choice_idx: int = Field(ge=0)
+    musician_image_urls: List[str] = Field(default_factory=list)
+    render_id: Optional[str] = None
+
+
+class HarmonizedImage(BaseModel):
+    image_url: str
+    background_id: Optional[str] = None
+    model: Optional[str] = None
+    prompt: Optional[str] = None
+    seed: Optional[int] = None
+
+
+class SimpleHarmonizeResponse(BaseModel):
+    campaign_id: str
+    render_id: str
+    size: SizeT
+    l2_composite_url: str
+    meta: Dict[str, Any] = Field(default_factory=dict)
+    harmonized_images: List[HarmonizedImage] = Field(default_factory=list)

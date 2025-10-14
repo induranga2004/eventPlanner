@@ -19,13 +19,26 @@ import {
   Typography,
   Fade,
   Slide,
+  Fab,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
+  AutoAwesome,
+  Brush,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useEventPlanning } from '../contexts/EventPlanningContext';
+
+const API_BASE = (
+  import.meta.env.VITE_API_BASE ||
+  import.meta.env.VITE_API_BASE_URL ||
+  'http://127.0.0.1:1800'
+).replace(/\/$/, '');
 
 const MotionCard = motion(Card);
 
@@ -150,7 +163,9 @@ function BudgetCard({ concept, selected, onSelect, onRefreshName, refreshing }) 
   );
 }
 
-function ProviderSelectionModal({ open, onClose, concept, campaignCity, budgetPerCategory }) {
+function ProviderSelectionModal({ open, onClose, concept, campaignCity, budgetPerCategory, eventData, campaignId }) {
+  const navigate = useNavigate();
+  const { saveEventData } = useEventPlanning();
   const [activeTab, setActiveTab] = useState(0);
   const [selections, setSelections] = useState({
     venue: null,
@@ -165,6 +180,8 @@ function ProviderSelectionModal({ open, onClose, concept, campaignCity, budgetPe
     sound: [],
   });
   const [loading, setLoading] = useState(false);
+  const [selectionComplete, setSelectionComplete] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const tabs = [
     { label: 'Venue', key: 'venue' },
@@ -188,7 +205,7 @@ function ProviderSelectionModal({ open, onClose, concept, campaignCity, budgetPe
       if (budget) params.append('max_budget_lkr', budget.toString());
 
       const response = await fetch(
-        `http://localhost:1800/planner/providers/${category}?${params.toString()}`
+        `${API_BASE}/planner/providers/${category}?${params.toString()}`
       );
       
       if (!response.ok) throw new Error('Failed to fetch providers');
@@ -509,15 +526,43 @@ function ProviderSelectionModal({ open, onClose, concept, campaignCity, budgetPe
             ) : (
               <Button
                 variant="contained"
-                onClick={() => {
-                  console.log('Final selections:', selections);
-                  console.log('Selected providers:', {
+                onClick={async () => {
+                  const selectedProviders = {
                     venue: providers.venue.find(p => (p.id || p.name) === selections.venue),
                     music: providers.music.filter(p => selections.music.includes(p.id || p.name)),
                     lighting: providers.lighting.find(p => (p.id || p.name) === selections.lighting),
                     sound: providers.sound.find(p => (p.id || p.name) === selections.sound),
-                  });
+                  };
+                  
+                  console.log('Final selections:', selectedProviders);
+                  
+                  // Save to context for AI poster generation
+                  const eventContext = {
+                    campaign_id: campaignId,
+                    event_name: eventData?.event?.name || 'Unnamed Event',
+                    venue: eventData?.event?.venue || 'TBD',
+                    event_date: eventData?.event?.date || new Date().toISOString().split('T')[0],
+                    attendees_estimate: eventData?.event?.attendees || 100,
+                    total_budget_lkr: concept?.total_lkr || 0,
+                    number_of_concepts: eventData?.concepts?.length || 3,
+                    selectedConcept: concept,
+                    selections: selectedProviders,
+                    timestamp: new Date().toISOString(),
+                    metadata: {
+                      city: campaignCity,
+                      vibe: eventData?.vibe || 'professional'
+                    }
+                  };
+                  
+                  await saveEventData(eventContext);
+                  setSelectionComplete(true);
+                  setSnackbarOpen(true);
                   onClose();
+                  
+                  // Trigger parent to show poster CTA
+                  if (typeof window !== 'undefined' && window.showPosterCTA) {
+                    window.showPosterCTA();
+                  }
                 }}
               >
                 Confirm Selection
@@ -531,9 +576,19 @@ function ProviderSelectionModal({ open, onClose, concept, campaignCity, budgetPe
 }
 
 export default function InteractivePlannerResults({ data, campaignId }) {
+  const navigate = useNavigate();
   const [selectedConcept, setSelectedConcept] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [refreshingName, setRefreshingName] = useState(null);
+  const [showPosterCTA, setShowPosterCTA] = useState(false);
+
+  // Listen for poster CTA trigger from modal
+  useEffect(() => {
+    window.showPosterCTA = () => setShowPosterCTA(true);
+    return () => {
+      delete window.showPosterCTA;
+    };
+  }, []);
 
   // Extract campaign city and budget info from data
   const campaignCity = data?.city || data?.event_details?.city || 'Colombo';
@@ -543,7 +598,7 @@ export default function InteractivePlannerResults({ data, campaignId }) {
     
     try {
       // Call your new /planner/regenerate-name endpoint
-      const response = await fetch('http://127.0.0.1:1800/planner/regenerate-name', {
+  const response = await fetch(`${API_BASE}/planner/regenerate-name`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -624,7 +679,83 @@ export default function InteractivePlannerResults({ data, campaignId }) {
         concept={selectedConcept}
         campaignCity={campaignCity}
         budgetPerCategory={selectedConcept ? getBudgetPerCategory(selectedConcept) : {}}
+        eventData={data}
+        campaignId={campaignId}
       />
+
+      {/* AI Poster Generation CTA Floating Button */}
+      <AnimatePresence>
+        {showPosterCTA && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            style={{
+              position: 'fixed',
+              bottom: 32,
+              right: 32,
+              zIndex: 1000
+            }}
+          >
+            <Fab
+              variant="extended"
+              size="large"
+              onClick={() => navigate('/ai-poster-wizard')}
+              sx={{
+                background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+                color: '#F9DBBA',
+                px: 4,
+                py: 3,
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                boxShadow: '0px 8px 24px rgba(91, 153, 194, 0.5)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #7FB3D5 0%, #1F316F 100%)',
+                  transform: 'scale(1.05) translateY(-4px)',
+                  boxShadow: '0px 12px 32px rgba(91, 153, 194, 0.6)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                }
+              }}
+            >
+              <Brush sx={{ mr: 1.5, fontSize: '1.5rem' }} />
+              Create Event Poster
+            </Fab>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={showPosterCTA}
+        autoHideDuration={6000}
+        onClose={() => setShowPosterCTA(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        sx={{ mb: 2, ml: 2 }}
+      >
+        <Alert
+          onClose={() => setShowPosterCTA(false)}
+          severity="success"
+          sx={{
+            width: '100%',
+            background: 'linear-gradient(135deg, rgba(91, 153, 194, 0.95) 0%, rgba(26, 72, 112, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            color: '#F9DBBA',
+            fontWeight: 600,
+            fontSize: '1rem',
+            boxShadow: '0px 8px 24px rgba(91, 153, 194, 0.4)',
+            border: '1px solid rgba(249, 219, 186, 0.2)',
+            '& .MuiAlert-icon': {
+              color: '#F9DBBA'
+            }
+          }}
+        >
+          ✨ Event plan saved! Click the button to create stunning posters for "{data?.event_name || 'your event'}"
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

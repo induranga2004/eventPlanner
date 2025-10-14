@@ -11,6 +11,7 @@ import MusicBandDashboard from './components/MusicBandDashboard'
 import LightsDashboard from './components/LightsDashboard'
 import SoundsDashboard from './components/SoundsDashboard'
 import { SubscriptionProvider } from './hooks/useSubscription'
+import { EventPlanningProvider } from './contexts/EventPlanningContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import theme from './theme'
 
@@ -33,6 +34,7 @@ const Home = React.lazy(() => import('./pages/Home.jsx'))
 const Editor = React.lazy(() => import('./pages/Editor.jsx'))
 const Health = React.lazy(() => import('./pages/Health.jsx'))
 const Wizard = React.lazy(() => import('./pages/Wizard.jsx'))
+const AIPosterWizard = React.lazy(() => import('./pages/AIPosterWizard.jsx'))
 
 const RootRedirect = () => {
   const navigate = useNavigate()
@@ -76,6 +78,7 @@ const router = createBrowserRouter([
   { path: '/home', element: <Home /> },
   { path: '/editor', element: <Editor /> },
   { path: '/wizard', element: <Wizard /> },
+  { path: '/ai-poster-wizard', element: <AIPosterWizard /> },
   { path: '/health', element: <Health /> },
   { path: '/design', element: <Editor /> },
 ])
@@ -85,11 +88,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <SubscriptionProvider>
-        <ErrorBoundary>
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <RouterProvider router={router} />
-          </React.Suspense>
-        </ErrorBoundary>
+        <EventPlanningProvider>
+          <ErrorBoundary>
+            <React.Suspense fallback={<div>Loading...</div>}>
+              <RouterProvider router={router} />
+            </React.Suspense>
+          </ErrorBoundary>
+        </EventPlanningProvider>
       </SubscriptionProvider>
     </ThemeProvider>
   </React.StrictMode>

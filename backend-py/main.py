@@ -81,6 +81,14 @@ try:
 except Exception as e:
     logger.warning(f"/api/intelligence router not mounted: {e}")
 
+# --- Mount Event Context Router (Integration Layer) ---
+try:
+    from routers.event_context import router as event_context_router
+    app.include_router(event_context_router)
+    logger.info("Mounted /api/event-context router (Event Planning Integration).")
+except Exception as e:
+    logger.warning(f"/api/event-context router not mounted: {e}")
+
 # --- Campaign Management Endpoints ---
 class CampaignCreate(BaseModel):
     name: str
