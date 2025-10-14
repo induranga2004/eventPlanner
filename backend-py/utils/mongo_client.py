@@ -61,7 +61,7 @@ def _resolve_database(client: Any) -> Any:
 
     try:
         default_db = client.get_default_database()
-        if default_db:  # type: ignore[truthy-bool]
+        if default_db is not None:
             return default_db
     except PyMongoError as exc:
         raise MongoUnavailable(f"Unable to determine default Mongo database: {exc}") from exc

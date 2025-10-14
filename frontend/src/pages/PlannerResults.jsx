@@ -164,7 +164,8 @@ export default function PlannerResults({ data, campaignId }) {
               <div style={{ fontSize: 14, opacity: .8 }}>
                 Type: {v.type || "n/a"}
                 {v.capacity ? ` • Capacity: ${v.capacity}` : ""}
-                {v.avg_cost_lkr ? ` • Avg: LKR ${Number(v.avg_cost_lkr).toLocaleString()}` : ""}
+                {formatCurrency(v.avg_cost_lkr) ? ` • Avg: ${formatCurrency(v.avg_cost_lkr)}` : ""}
+                {formatCurrency(v.standard_rate_lkr) && (!v.avg_cost_lkr || v.standard_rate_lkr !== v.avg_cost_lkr) ? ` • Standard: ${formatCurrency(v.standard_rate_lkr)}` : ""}
                 {typeof v.min_lead_days === "number" && v.min_lead_days > 0 ? ` • Lead: ~${v.min_lead_days} days` : ""}
                 {v.source ? ` • Source: ${v.source}` : ""}
               </div>

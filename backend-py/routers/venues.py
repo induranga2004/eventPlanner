@@ -12,6 +12,7 @@ class VenueOut(BaseModel):
     type: Optional[str] = None
     capacity: Optional[int] = None
     avg_cost_lkr: Optional[int] = None
+    standard_rate_lkr: Optional[int] = None
     rating: Optional[float] = None
     website: Optional[str] = None
     min_lead_days: Optional[int] = None

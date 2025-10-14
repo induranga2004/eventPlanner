@@ -201,13 +201,22 @@ def calculate_venue_cost(venue_data: dict, attendees: int, concept_id: Optional[
         if pp_cost > 0 and attendees > 0:
             return pp_cost * attendees
 
+    standard_rate = _as_int(venue_data.get("standard_rate_lkr") or venue_data.get("standardRate"), 0)
+    if standard_rate <= 0:
+        standard_rate = _as_int((venue_data.get("pricing") or {}).get("standardRate"), 0)
+
     pricing_type = (venue_data.get("pricing_type") or venue_data.get("pricing_model") or "").lower()
     if pricing_type in {"per_person", "per_head"} and attendees > 0:
         base = _as_int(venue_data.get("avg_cost_lkr"), 0)
         if base > 0:
             return base * attendees
+        if standard_rate > 0:
+            return standard_rate * attendees
 
     base_cost = _as_int(venue_data.get("avg_cost_lkr"), 0)
+    if base_cost <= 0 and standard_rate > 0:
+        base_cost = standard_rate
+
     if base_cost > 0:
         return base_cost
 

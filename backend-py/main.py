@@ -7,11 +7,11 @@ from pydantic import BaseModel
 from crewai import Agent, Task, Crew, Process
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
 # --- Project imports (package-style) ---
 from config.database import engine, get_db, Base
+from config.settings import load_environment
 from models.campaign import Campaign
 from routers.planner import router as planner_router
 from routers.venues import router as venues_router
@@ -20,7 +20,7 @@ from routers.venues import router as venues_router
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-load_dotenv()
+load_environment()
 
 # Check for OpenAI API key (used by the CrewAI content demo and OpenAI-powered tools)
 # Check for required environment variables

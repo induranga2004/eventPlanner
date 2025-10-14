@@ -122,6 +122,23 @@ def list_venues(city: Optional[str] = None, limit: int = 20) -> List[Dict[str, A
     docs = _query_users("venue", city=city, limit=limit)
     venues: List[Dict[str, Any]] = []
     for doc in docs:
+        pricing = doc.get("pricing") if isinstance(doc.get("pricing"), dict) else {}
+        standard_rate = _to_int(doc.get("standardRate"))
+        if standard_rate is None:
+            standard_rate = _to_int(pricing.get("standardRate"))
+
+        raw_cost = (
+            doc.get("avg_cost_lkr")
+            or doc.get("avgCostLkr")
+            or doc.get("avgCost")
+            or pricing.get("avg_cost_lkr")
+            or pricing.get("avgCostLkr")
+            or pricing.get("avgCost")
+        )
+        avg_cost = _to_int(raw_cost)
+        if (avg_cost is None or avg_cost == 0) and standard_rate:
+            avg_cost = standard_rate
+
         venues.append(
             {
                 "id": str(doc.get("_id")) if doc.get("_id") is not None else None,
@@ -129,7 +146,8 @@ def list_venues(city: Optional[str] = None, limit: int = 20) -> List[Dict[str, A
                 "address": _coalesce(doc, ("venueAddress", "address")),
                 "type": doc.get("venueType") or doc.get("type") or doc.get("role"),
                 "capacity": _to_int(_coalesce(doc, _CAPACITY_FIELDS)) or 0,
-                "avg_cost_lkr": _to_int(doc.get("avg_cost_lkr") or doc.get("avgCostLkr") or doc.get("avgCost")) or 0,
+                "avg_cost_lkr": avg_cost or 0,
+                "standard_rate_lkr": standard_rate,
                 "rating": _to_float(_coalesce(doc, _RATING_FIELDS)),
                 "website": _coalesce(doc, _WEBSITE_FIELDS),
                 "min_lead_days": _to_int(_coalesce(doc, _MIN_LEAD_FIELDS)) or 0,

@@ -93,6 +93,80 @@ const InfoBox = styled(Box)(({ theme }) => ({
   }
 }));
 
+const GlassCard = styled(MotionPaper)(({ theme }) => ({
+  background: 'linear-gradient(135deg, rgba(26, 72, 112, 0.92) 0%, rgba(31, 49, 111, 0.94) 100%)',
+  border: '1px solid rgba(91, 153, 194, 0.35)',
+  borderRadius: '20px',
+  backdropFilter: 'blur(18px)',
+  color: '#FFFFFF',
+  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+  overflow: 'hidden',
+  position: 'relative',
+  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: '0 14px 34px rgba(0, 0, 0, 0.4)',
+  }
+}));
+
+const FloatingMusicIcon = styled(MotionBox)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '16px',
+  padding: '10px',
+  background: 'linear-gradient(135deg, rgba(91, 153, 194, 0.5) 0%, rgba(31, 49, 111, 0.7) 100%)',
+  border: '1px solid rgba(255, 255, 255, 0.25)',
+  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.35)',
+  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-3px) scale(1.05)',
+    boxShadow: '0 12px 26px rgba(0, 0, 0, 0.45)',
+  }
+}));
+
+const GradientText = styled(Typography)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #F9DBBA 0%, #5B99C2 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  fontWeight: 700,
+  display: 'inline-block',
+}));
+
+const AIButton = styled(Button)(({ theme }) => ({
+  borderRadius: '12px',
+  textTransform: 'none',
+  fontWeight: 600,
+  padding: '12px 20px',
+  transition: 'all 0.3s ease',
+  border: '1px solid rgba(91, 153, 194, 0.4)',
+  backdropFilter: 'blur(12px)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '&.MuiButton-contained': {
+    background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+    color: '#F9DBBA',
+    boxShadow: '0 6px 18px rgba(91, 153, 194, 0.35)',
+    '&:hover': {
+      background: 'linear-gradient(135deg, #1A4870 0%, #5B99C2 100%)',
+      boxShadow: '0 8px 24px rgba(91, 153, 194, 0.45)',
+      transform: 'translateY(-2px)',
+    }
+  },
+  '&.MuiButton-outlined': {
+    background: 'rgba(26, 72, 112, 0.2)',
+    color: '#F9DBBA',
+    borderColor: 'rgba(91, 153, 194, 0.5)',
+    '&:hover': {
+      background: 'rgba(91, 153, 194, 0.25)',
+      borderColor: '#5B99C2',
+      boxShadow: '0 6px 18px rgba(91, 153, 194, 0.35)',
+      transform: 'translateY(-2px)',
+    }
+  }
+}));
+
 // Small inline sparkline to visualize recent activity
 const Sparkline = ({ values = [], color = '#5B99C2', width = 100, height = 28 }) => {
   if (!values || values.length === 0) return null;
