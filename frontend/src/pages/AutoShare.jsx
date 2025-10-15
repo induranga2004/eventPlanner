@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   Box, Container, Paper, Typography, TextField, Grid, Button, Stack,
   Alert, Snackbar, CircularProgress, Divider, InputAdornment
@@ -6,9 +7,11 @@ import {
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import ImageIcon from '@mui/icons-material/Image'
 import SaveIcon from '@mui/icons-material/Save'
-import { autoShare, getLatestEvent } from '../api/events'
+import { autoShare } from '../api/socialShare'
+import { getLatestEvent } from '../api/events'
 
 export default function AutoShare() {
+  const location = useLocation()
   const [form, setForm] = useState({
     name: '',
     date: '',
@@ -21,6 +24,7 @@ export default function AutoShare() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
+  const [loadedFromWizard, setLoadedFromWizard] = useState(false)
 
   const preview = useMemo(() => form.photoUrl?.trim() || '', [form.photoUrl])
 
@@ -28,11 +32,28 @@ export default function AutoShare() {
     setForm((s) => ({ ...s, [e.target.name]: e.target.value }))
   }
 
-  // Prefill the form with the latest event saved in MongoDB (if available)
+  // Prefill the form with data from AIPosterWizard (via navigation state) or latest event from MongoDB
   // This runs only once on mount and won't override any user edits afterward.
   useEffect(() => {
     (async () => {
       try {
+        // First priority: Check if data was passed from AIPosterWizard
+        const passedData = location.state
+        if (passedData && passedData.photoUrl) {
+          setForm({
+            name: passedData.eventName || '',
+            date: passedData.date || '',
+            venue: passedData.venue || '',
+            price: passedData.price || '',
+            audience: passedData.audience || '',
+            photoUrl: passedData.photoUrl || ''
+          })
+          setLoadedFromWizard(true)
+          setToast('Loaded poster from AI wizard! 🎨')
+          return // Don't fetch from MongoDB if we have passed data
+        }
+
+        // Second priority: Fetch latest event from MongoDB
         const latest = await getLatestEvent()
         if (latest) {
           setForm((s) => {
@@ -54,7 +75,7 @@ export default function AutoShare() {
         // Ignore errors (e.g., NO_DB_SAVE or backend not available)
       }
     })()
-  }, [])
+  }, [location.state])
 
   const validate = () => {
     const required = ['name', 'date', 'venue', 'price', 'audience', 'photoUrl']
@@ -71,10 +92,14 @@ export default function AutoShare() {
     try {
       const data = await autoShare(form)
       setResult(data)
-      setToast(data.saved === false ? 'Auto share done (no DB save mode)' : 'Auto share saved')
+      setToast('Successfully shared to social media! 🎉')
     } catch (e) {
-      const upstreamErr = e?.response?.data?.upstream?.error
-      setError(upstreamErr || e?.response?.data?.error || e.message)
+      console.error('Auto-share error:', e)
+      const errorMsg = e?.response?.data?.error || 
+                       e?.response?.data?.detail || 
+                       e?.message || 
+                       'Failed to share to social media'
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -87,6 +112,12 @@ export default function AutoShare() {
           <EventAvailableIcon color="primary" />
           <Typography variant="h5" fontWeight={700}>Event Auto Share</Typography>
         </Stack>
+
+        {loadedFromWizard && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            🎨 Poster loaded from AI Wizard! Your generated image is ready to share.
+          </Alert>
+        )}
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={7}>
