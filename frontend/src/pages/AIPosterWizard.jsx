@@ -1,5 +1,6 @@
 // frontend/src/pages/AIPosterWizard.jsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -28,6 +29,7 @@ import {
   ArrowBack,
   ArrowForward,
   Refresh,
+  Share,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEventPlanning } from '../contexts/EventPlanningContext';
@@ -67,6 +69,7 @@ const getRandomEditorImage = () => {
 
 export default function AIPosterWizard() {
   const { eventData, loadEventData } = useEventPlanning();
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -280,6 +283,26 @@ export default function AIPosterWizard() {
     link.click();
     document.body.removeChild(link);
     setSuccess(`✅ Downloaded poster ${index + 1}`);
+  };
+
+  // Share to social media - redirect to auto-share page
+  const handleShareToSocial = (imageUrl) => {
+    if (!eventData) {
+      setError('Event data not available for sharing');
+      return;
+    }
+
+    // Navigate to auto-share page with poster data
+    navigate('/auto-share', {
+      state: {
+        photoUrl: imageUrl,
+        eventName: eventData.event_name || 'Event',
+        date: eventData.event_date || new Date().toISOString().split('T')[0],
+        venue: eventData.venue || 'TBA',
+        price: eventData.budget ? `${eventData.budget} LKR` : 'Free',
+        audience: eventData.audience || 'Everyone',
+      }
+    });
   };
 
   // Render step content
@@ -581,22 +604,41 @@ export default function AIPosterWizard() {
                       }}
                     />
                     <CardContent>
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={<Download />}
-                        onClick={() => handleDownload(img.image_url, idx)}
-                        sx={{
-                          background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
-                          color: '#F9DBBA',
-                          fontWeight: 700,
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #7FB3D5 0%, #1F316F 100%)',
-                          },
-                        }}
-                      >
-                        Download Poster
-                      </Button>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          startIcon={<Download />}
+                          onClick={() => handleDownload(img.image_url, idx)}
+                          sx={{
+                            background: 'linear-gradient(135deg, #5B99C2 0%, #1A4870 100%)',
+                            color: '#F9DBBA',
+                            fontWeight: 700,
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #7FB3D5 0%, #1F316F 100%)',
+                            },
+                          }}
+                        >
+                          Download Poster
+                        </Button>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          startIcon={<Share />}
+                          onClick={() => handleShareToSocial(img.image_url)}
+                          sx={{
+                            color: '#5B99C2',
+                            borderColor: '#5B99C2',
+                            fontWeight: 700,
+                            '&:hover': {
+                              borderColor: '#7FB3D5',
+                              background: 'rgba(91, 153, 194, 0.1)',
+                            },
+                          }}
+                        >
+                          Share to Social Media
+                        </Button>
+                      </Box>
                     </CardContent>
                   </MotionCard>
                 ))}
