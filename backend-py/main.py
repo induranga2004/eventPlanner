@@ -4,7 +4,6 @@ import uuid
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from crewai import Agent, Task, Crew, Process
 from sqlalchemy.orm import Session
 
 # --- Project imports (package-style) ---
@@ -27,6 +26,9 @@ if not os.getenv("OPENAI_API_KEY"):
     logger.warning(
         "OPENAI_API_KEY not found; AI-powered enhancements will rely on Mongo provider data only."
     )
+
+_BOOL_TRUE = {"1", "true", "yes", "on"}
+CREW_AI_ENABLED = os.getenv("ENABLE_CREW_AI", "0").strip().lower() in _BOOL_TRUE
 
 # Check for Cloudinary configuration (for AI visual composer features)
 AI_ENABLE_FLUX = os.getenv("AI_ENABLE_FLUX", "false").lower() == "true"
@@ -75,12 +77,15 @@ try:
 except Exception as e:
     logger.warning(f"/api/design router not mounted: {e}")
 
-try:
-    from routers.intelligence import router as intelligence_router
-    app.include_router(intelligence_router, prefix="/api/intelligence", tags=["intelligence"])
-    logger.info("Mounted /api/intelligence router (AI Analysis).")
-except Exception as e:
-    logger.warning(f"/api/intelligence router not mounted: {e}")
+if CREW_AI_ENABLED:
+    try:
+        from routers.intelligence import router as intelligence_router
+        app.include_router(intelligence_router, prefix="/api/intelligence", tags=["intelligence"])
+        logger.info("Mounted /api/intelligence router (AI Analysis).")
+    except Exception as e:
+        logger.warning(f"/api/intelligence router not mounted: {e}")
+else:
+    logger.info("CrewAI intelligence endpoints disabled (set ENABLE_CREW_AI=1 to enable).")
 
 # --- Mount Event Context Router (Integration Layer) ---
 try:
@@ -127,65 +132,77 @@ def get_campaign(campaign_id: str, db: Session = Depends(get_db)):
         created_at=campaign.created_at.isoformat()
     )
 
-# --- CrewAI Content Demo ---
-class TopicRequest(BaseModel):
-    topic: str
+if CREW_AI_ENABLED:
+    from crewai import Agent, Task, Crew, Process
 
-content_writer = Agent(
-    role='Marketing Content Creator',
-    goal='Generate engaging and creative content about a given topic: {topic}',
-    backstory=(
-        "You are a renowned Content Creator, known for your insightful and engaging articles. "
-        "You transform complex concepts into compelling narratives."
-    ),
-    verbose=True,
-    allow_delegation=False
-)
+    # --- CrewAI Content Demo ---
+    class TopicRequest(BaseModel):
+        topic: str
 
-write_content_task = Task(
-    description=(
-        "Write a short, engaging blog post about {topic}. "
-        "The post should be easy to understand, interesting, and no more than 3 paragraphs."
-    ),
-    expected_output='A 3-paragraph blog post about the specified topic.',
-    agent=content_writer
-)
+    content_writer = Agent(
+        role='Marketing Content Creator',
+        goal='Generate engaging and creative content about a given topic: {topic}',
+        backstory=(
+            "You are a renowned Content Creator, known for your insightful and engaging articles. "
+            "You transform complex concepts into compelling narratives."
+        ),
+        verbose=True,
+        allow_delegation=False
+    )
 
-content_creation_crew = Crew(
-    agents=[content_writer],
-    tasks=[write_content_task],
-    process=Process.sequential,
-    verbose=True
-)
+    write_content_task = Task(
+        description=(
+            "Write a short, engaging blog post about {topic}. "
+            "The post should be easy to understand, interesting, and no more than 3 paragraphs."
+        ),
+        expected_output='A 3-paragraph blog post about the specified topic.',
+        agent=content_writer
+    )
 
-@app.post("/generate-content", summary="Generate content about a topic")
-def generate_content(request: TopicRequest):
-    """Kicks off the content creation crew to generate a blog post about the specified topic."""
-    try:
-        result = content_creation_crew.kickoff(inputs={"topic": request.topic})
-        return {"result": result}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    content_creation_crew = Crew(
+        agents=[content_writer],
+        tasks=[write_content_task],
+        process=Process.sequential,
+        verbose=True
+    )
+
+    @app.post("/generate-content", summary="Generate content about a topic")
+    def generate_content(request: TopicRequest):
+        """Kicks off the content creation crew to generate a blog post about the specified topic."""
+        try:
+            result = content_creation_crew.kickoff(inputs={"topic": request.topic})
+            return {"result": result}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+else:
+    logger.info("CrewAI content generator disabled (set ENABLE_CREW_AI=1 to expose /generate-content)")
 
 @app.get("/", summary="Health Check")
 def read_root():
+    services = ["event-planner", "visual-composer"]
+    if CREW_AI_ENABLED:
+        services.append("intelligent-analysis")
+
+    endpoints = {
+        "planner": "/campaigns/*, /planner/*, /venues/*, /providers/*",
+        "design": "/api/design/*",
+    }
+    if CREW_AI_ENABLED:
+        endpoints["intelligence"] = "/api/intelligence/*"
+
     return {
         "status": "Event Planner API is running",
         "version": "2.0.0",
-        "services": ["event-planner", "visual-composer", "intelligent-analysis"],
+        "services": services,
         "features": {
             "event_planning": True,
             "provider_matching": True,
             "ai_enable_flux": AI_ENABLE_FLUX,
             "cloudinary_configured": CLOUDINARY_READY,
-            "crewai_intelligence": True,
+            "crewai_intelligence": CREW_AI_ENABLED,
             "mongodb_connected": bool(os.getenv("MONGO_URI")),
         },
-        "endpoints": {
-            "planner": "/campaigns/*, /planner/*, /venues/*, /providers/*",
-            "design": "/api/design/*",
-            "intelligence": "/api/intelligence/*"
-        }
+        "endpoints": endpoints,
     }
 
 # --- Dev runner ---

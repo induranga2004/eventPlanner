@@ -45,6 +45,10 @@ from services.event_aware_prompts import (
     infer_genre_from_musicians,
     extract_city,
 )
+from services.poster_prompts import (
+    suggest_background_prompt,
+    suggest_harmonize_prompt,
+)
 from prompts.design_prompts import build_harmonize_prompt, build_bg_prompt
 
 router = APIRouter()
@@ -348,7 +352,13 @@ def generate_backgrounds(
 
     prompt_payload = _event_context_payload_for_prompts(context, style_prefs, design_request.event.genre)
     base_prompt = build_event_aware_bg_prompt(prompt_payload)
-    prompt = base_prompt if not payload.user_query else f"{base_prompt} {payload.user_query}".strip()
+    prompt_suggestion = suggest_background_prompt(
+        event_payload=prompt_payload,
+        base_prompt=base_prompt,
+        user_query=payload.user_query,
+    )
+    prompt = prompt_suggestion.prompt
+    prompt_source = prompt_suggestion.source
 
     options: List[BackgroundOption] = []
     for idx in range(count):
@@ -367,6 +377,7 @@ def generate_backgrounds(
             metadata={
                 "index": idx,
                 "campaign_id": payload.campaign_id,
+                "prompt_source": prompt_source,
             },
         )
         options.append(option)
@@ -565,12 +576,14 @@ def _handle_advanced_harmonize(request: HarmonizeRequest) -> Dict[str, Any]:
     except Exception as exc:
         print(f"Context loading failed: {exc}, using default prompt")
 
-    harm_prompt = build_harmonize_prompt(
+    base_harm_prompt = build_harmonize_prompt(
         city=context.get("city"),
         mood=context.get("mood"),
         genre=context.get("genre"),
         palette=context.get("palette"),
     )
+    harm_suggestion = suggest_harmonize_prompt(context=context, base_prompt=base_harm_prompt)
+    harm_prompt = harm_suggestion.prompt
 
     comp_bytes = harmonize_img2img(
         bg_bytes=bg_bytes,
@@ -590,7 +603,11 @@ def _handle_advanced_harmonize(request: HarmonizeRequest) -> Dict[str, Any]:
         render_id=request.render_id,
         size=request.size,
         l2_composite_url=url,
-        meta={"model_harmonize": "FLUX.1-Kontext-dev", "seed_harmonize": str(request.seed_harmonize or "none")},
+        meta={
+            "model_harmonize": "FLUX.1-Kontext-dev",
+            "seed_harmonize": str(request.seed_harmonize or "none"),
+            "prompt_source": harm_suggestion.source,
+        },
     )
     enriched = base_response.model_dump()
     enriched["harmonized_images"] = [
@@ -626,12 +643,14 @@ def _handle_simple_harmonize(request: SimpleHarmonizeRequest) -> Dict[str, Any]:
 
     size = bg_option.get("size", "square")
     context = design_context.extract_prompt_context(render_id)
-    harm_prompt = build_harmonize_prompt(
+    base_harm_prompt = build_harmonize_prompt(
         city=context.get("city"),
         mood=context.get("mood"),
         genre=context.get("genre"),
         palette=context.get("palette"),
     )
+    harm_suggestion = suggest_harmonize_prompt(context=context, base_prompt=base_harm_prompt)
+    harm_prompt = harm_suggestion.prompt
 
     cutout_urls = request.musician_image_urls
     if not cutout_urls:
@@ -660,6 +679,7 @@ def _handle_simple_harmonize(request: SimpleHarmonizeRequest) -> Dict[str, Any]:
         meta={
             "model_harmonize": "FLUX.1-Kontext-dev" if AI_ENABLE_FLUX else "composite",
             "background_index": request.bg_choice_idx,
+            "prompt_source": harm_suggestion.source,
         },
         harmonized_images=[
             HarmonizedImage(

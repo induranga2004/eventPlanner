@@ -24,6 +24,7 @@ from planner.service import (
     generate_dynamic_costs,
 )
 from agents.venue_finder import find_venues
+from services.concept_naming import generate_concept_identity
 
 router = APIRouter(
     prefix="/campaigns",
@@ -49,6 +50,7 @@ class CostItem(BaseModel):
 class Concept(BaseModel):
     id: str
     title: str
+    tagline: Optional[str] = None
     assumptions: List[str]
     costs: List[CostItem]
     total_lkr: int
@@ -110,10 +112,35 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     base_timeline = compress_milestones(event_info.date)
     tl_with_lead = apply_venue_lead_time(event_info.date, base_timeline, recommended_lead_days)
 
+    def _extract_city(venue_str: str) -> Optional[str]:
+        if not venue_str:
+            return None
+        tokens = [segment.strip() for segment in venue_str.split(",") if segment.strip()]
+        if tokens:
+            return tokens[-1]
+        return None
+
+    event_payload = event_info.model_dump()
+    event_payload["city"] = _extract_city(body.venue) or DEFAULT_CITY
+
     for cid in ids:
         title = pick_title(cid)
         assumptions = pick_assumptions(cid)
         concept_details = pick_concept_details(cid)
+
+        identity = generate_concept_identity(
+            event=event_payload,
+            concept=concept_details,
+            budget_lkr=body.total_budget_lkr,
+            attendees=body.attendees_estimate,
+            fallback_title=title,
+            fallback_tagline=concept_details.get("tagline"),
+        )
+
+        title = identity.title
+        tagline = identity.tagline
+        concept_details["title"] = title
+        concept_details["tagline"] = tagline
 
         # Generate initial costs based on concept theme
         cost_pairs = generate_costs(body.total_budget_lkr, cid)
@@ -128,7 +155,7 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             concept_title=title,
             assumptions="|".join(assumptions),
             total_lkr=total,
-            budget_profile=concept_details["title"]
+            budget_profile=concept_details["title"],
         )
         db.add(plan)
         for c in costs:
@@ -140,6 +167,7 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             Concept(
                 id=cid,
                 title=title,
+                tagline=tagline,
                 assumptions=assumptions,
                 costs=costs,
                 total_lkr=total,

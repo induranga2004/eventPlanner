@@ -31,7 +31,7 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEventPlanning } from '../contexts/EventPlanningContext';
-import { mapEventContextToAIPayload, generateSmartQuery } from '../utils/eventToAIMapper';
+import { generateSmartQuery } from '../utils/eventToAIMapper';
 import { buildPlannerApiUrl } from '../config/api.js';
 import { withPlannerKey } from '../api/plannerHeaders.js';
 
@@ -60,6 +60,7 @@ export default function AIPosterWizard() {
   const [musicians, setMusicians] = useState([]);
   const [customQuery, setCustomQuery] = useState('');
   const [autoLoaded, setAutoLoaded] = useState(false);
+  const [autoStartTriggered, setAutoStartTriggered] = useState(false);
 
   // Auto-load event context on mount
   useEffect(() => {
@@ -72,11 +73,6 @@ export default function AIPosterWizard() {
           const smartQuery = generateSmartQuery(context);
           setCustomQuery(smartQuery);
           setSuccess(`✅ Loaded event: ${context.event_name || 'Unnamed Event'}`);
-          
-          // Auto-advance to background generation step
-          setTimeout(() => {
-            setActiveStep(1);
-          }, 1500);
         } else {
           setError('No event context found. Please complete event planning first.');
         }
@@ -96,13 +92,45 @@ export default function AIPosterWizard() {
       return;
     }
 
+    if (!eventData.campaign_id) {
+      setError('Missing campaign ID in event context. Please regenerate the plan.');
+      return;
+    }
+
+    const requiredFields = [
+      { key: 'event_name', label: 'event name' },
+      { key: 'venue', label: 'venue' },
+      { key: 'event_date', label: 'event date' },
+      { key: 'attendees_estimate', label: 'attendee estimate' },
+      { key: 'total_budget_lkr', label: 'total budget' },
+    ];
+
+    const missingField = requiredFields.find(({ key }) => !eventData[key]);
+    if (missingField) {
+      setError(`Event context is missing ${missingField.label}. Please return to the planner and complete the details.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setActiveStep(1);
 
     try {
-      const payload = mapEventContextToAIPayload(eventData);
+      const payload = {
+        campaign_id: eventData.campaign_id,
+        event_name: eventData.event_name,
+        venue: eventData.venue,
+        event_date: eventData.event_date,
+        attendees_estimate: Number(eventData.attendees_estimate || 0),
+        total_budget_lkr: Number(eventData.total_budget_lkr || 0),
+        number_of_concepts: eventData.number_of_concepts ?? 3,
+        selectedConcept: eventData.selectedConcept ?? null,
+        selections: eventData.selections ?? null,
+        metadata: eventData.metadata ?? null,
+        timestamp: eventData.timestamp ?? new Date().toISOString(),
+      };
       
-      const response = await fetch(buildPlannerApiUrl('/design/start-from-event'), {
+  const response = await fetch(buildPlannerApiUrl('/api/design/start-from-event'), {
         method: 'POST',
         headers: withPlannerKey({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
@@ -129,6 +157,19 @@ export default function AIPosterWizard() {
     }
   };
 
+  useEffect(() => {
+    if (!autoLoaded || !eventData || autoStartTriggered) {
+      return;
+    }
+
+    setAutoStartTriggered(true);
+    const timer = setTimeout(() => {
+      handleStartDesign();
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [autoLoaded, eventData, autoStartTriggered, handleStartDesign]);
+
   // Generate backgrounds
   const handleGenerateBackgrounds = async (cid = campaignId) => {
     if (!cid) {
@@ -140,7 +181,7 @@ export default function AIPosterWizard() {
     setError(null);
 
     try {
-      const response = await fetch(buildPlannerApiUrl('/design/generate-backgrounds'), {
+  const response = await fetch(buildPlannerApiUrl('/api/design/generate-backgrounds'), {
         method: 'POST',
         headers: withPlannerKey({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
@@ -183,7 +224,7 @@ export default function AIPosterWizard() {
         .map(p => p.photo)
         .filter(Boolean);
 
-      const response = await fetch(buildPlannerApiUrl('/design/harmonize'), {
+  const response = await fetch(buildPlannerApiUrl('/api/design/harmonize'), {
         method: 'POST',
         headers: withPlannerKey({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({

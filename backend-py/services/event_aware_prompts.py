@@ -91,17 +91,34 @@ def get_venue_budget_percent(event_context: dict) -> float:
     
     return (venue_cost / total) * 100 if total > 0 else 0
 
+def _extract_rate(provider: dict) -> float:
+    """Safely extract a numeric rate from provider metadata."""
+    if not isinstance(provider, dict):
+        return 0.0
+
+    raw_rate = provider.get('standard_rate_lkr')
+    if raw_rate is None:
+        raw_rate = provider.get('pricing_lkr')
+
+    if raw_rate is None:
+        return 0.0
+
+    try:
+        return float(raw_rate)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def get_provider_tier(event_context: dict, category: str) -> str:
     """Determine provider tier from selection"""
-    selections = event_context.get('selections', {})
+    selections = event_context.get('selections') or {}
     provider = selections.get(category)
-    
+
     if not provider:
         return 'standard'
-    
-    # Check if provider has rate info
-    rate = provider.get('standard_rate_lkr', 0) if isinstance(provider, dict) else 0
-    
+
+    rate = _extract_rate(provider)
+
     if rate > 100000:
         return 'premium'
     elif rate > 50000:

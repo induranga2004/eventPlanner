@@ -22,6 +22,7 @@ os.environ.setdefault("PLANNER_API_KEY", "test-planner-key")
 
 from main import app  # noqa: E402
 from config.database import SessionLocal  # noqa: E402
+from services.concept_naming import ConceptIdentity  # noqa: E402
 
 CLIENT_HEADERS = {"X-API-Key": os.environ["PLANNER_API_KEY"]}
 
@@ -75,7 +76,12 @@ def test_planner_flow_generates_design_background(client: TestClient) -> None:
         "total_budget_lkr": context_payload["total_budget_lkr"],
         "number_of_concepts": context_payload["number_of_concepts"],
     }
-    response = client.post(f"/campaigns/{campaign_id}/planner/generate", json=planner_body)
+    with patch("routers.planner.generate_concept_identity", return_value=ConceptIdentity(
+        title="Neon Skyline Sessions",
+        tagline="Colombo's waterfront comes alive with electric grooves",
+        source="test",
+    )):
+        response = client.post(f"/campaigns/{campaign_id}/planner/generate", json=planner_body)
     assert response.status_code == 200, response.text
     plan_data = response.json()
     assert plan_data["concepts"], "Planner should return at least one concept"

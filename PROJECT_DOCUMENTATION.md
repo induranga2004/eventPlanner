@@ -46,10 +46,11 @@ The **Event Planner** experience now targets a single mission: capture a campaig
 ### Backend-Python Technologies
 - **Python 3.9+** - Programming language
 - **FastAPI** - Modern, fast web framework for building APIs
-- **CrewAI** - Multi-agent AI framework
-- **OpenAI** - GPT models for content generation
+- **OpenAI** - GPT models for concept naming and poster prompts
+- **Hugging Face FLUX** - Image generation backend for posters
 - **Pydantic** - Data validation using Python type annotations
 - **Uvicorn** - ASGI web server
+- **CrewAI (optional)** - Legacy multi-agent toolkit, disabled unless `ENABLE_CREW_AI=1`
 
 ---
 
@@ -165,13 +166,15 @@ backend-py/
 - ✅ **Planner Service**: Campaign plan generation, dynamic cost recalculation, and timeline compression
 - ✅ **Provider Bridge**: Surfaces curated provider data from the internal catalog (Mongo-backed)
 - ✅ **Poster Pipeline**: FLUX background generation, harmonisation endpoints, and Cloudinary upload support
+- ✅ **AI Concept Naming**: OpenAI generates concept titles & taglines during planner creation with resilient fallbacks
+- ✅ **Poster Prompt Orchestration**: OpenAI enriches FLUX background and harmonisation prompts while retaining heuristic backups
 - ✅ **Health Monitoring**: `/health` and `/status` endpoints for readiness probes
 - ✅ **Environment Loading**: Shared `.env` discovery so both backends stay in sync
 
 #### Planner & design API surface (current focus):
 ```python
 # Campaign planning
-POST /campaigns/{campaign_id}/planner/generate      # Produce concepts, costs, timeline
+POST /campaigns/{campaign_id}/planner/generate      # Produce concepts with AI titles/taglines, costs, timeline
 POST /campaigns/{campaign_id}/planner/update-costs  # Recalculate costs for selected concept/venue
 POST /campaigns/{campaign_id}/planner/select        # Persist the concept/providers chosen by the user
 
@@ -187,8 +190,8 @@ GET  /api/event-context/{campaign_id}               # Retrieve stored planner co
 DELETE /api/event-context/{campaign_id}             # Remove stored planner context when archive/delete
 
 # Poster generation
-POST /design/background                             # Generate a background via HF FLUX
-POST /design/harmonize                              # Apply colour harmonisation + overlays
+POST /design/background                             # Generate background via FLUX using OpenAI-enriched prompts
+POST /design/harmonize                              # Apply colour harmonisation + overlays with adaptive prompts
 POST /design/export                                 # Produce final downloadable asset metadata
 ```
 
@@ -222,12 +225,14 @@ PLANNER_API_KEY=planner-dev-key                     # Single API key accepted fo
 PLANNER_API_KEYS=planner-dev-key,partner-integration
 
 OPENAI_API_KEY=sk-proj-your-openai-key              # Required for AI narratives/posters
+OPENAI_POSTER_PROMPT_MODEL=gpt-4o-mini             # Optional override for poster prompt assistant
 HF_TOKEN=your-hugging-face-token                    # Required for FLUX background generation
 CLOUDINARY_CLOUD_NAME=your_cloud                    # Poster uploads (optional in dev)
 CLOUDINARY_API_KEY=your_key
 CLOUDINARY_API_SECRET=your_secret
 SERPER_API_KEY=optional-search-key                  # Optional for planner web lookups
 USE_AI_CONCEPTS=0                                   # Use bundled concepts by default
+ENABLE_CREW_AI=0                                    # Mount CrewAI intelligence endpoints when set to 1
 ``` 
 
 Client calls must include an `X-API-Key` header matching one of the configured values when hitting planner-related endpoints.
