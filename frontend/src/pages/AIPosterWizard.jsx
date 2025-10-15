@@ -45,6 +45,26 @@ const steps = [
   'Download',
 ];
 
+// Hardcoded fallback images for manual editing
+const FALLBACK_EDITOR_IMAGES = [
+  'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800', // Concert crowd
+  'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800', // Stage lights
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800', // DJ performance
+  'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800', // Festival crowd
+  'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800', // Live band
+  'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800', // Concert hall
+  'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800', // Stage performance
+  'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800', // Music festival
+  'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800', // Concert night
+  'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800', // Music event
+];
+
+// Get random image from fallback array
+const getRandomEditorImage = () => {
+  const randomIndex = Math.floor(Math.random() * FALLBACK_EDITOR_IMAGES.length);
+  return FALLBACK_EDITOR_IMAGES[randomIndex];
+};
+
 export default function AIPosterWizard() {
   const { eventData, loadEventData } = useEventPlanning();
   const [activeStep, setActiveStep] = useState(0);
@@ -56,7 +76,14 @@ export default function AIPosterWizard() {
   const [campaignId, setCampaignId] = useState(null);
   const [backgrounds, setBackgrounds] = useState([]);
   const [selectedBackground, setSelectedBackground] = useState(null);
-  const [harmonizedImages, setHarmonizedImages] = useState([]);
+  // Initialize with random hardcoded fallback image - no loading needed
+  const [harmonizedImages, setHarmonizedImages] = useState([
+    {
+      image_url: getRandomEditorImage(),
+      model: 'manual_editing',
+      prompt: 'Ready for manual editing'
+    }
+  ]);
   const [musicians, setMusicians] = useState([]);
   const [customQuery, setCustomQuery] = useState('');
   const [autoLoaded, setAutoLoaded] = useState(false);
@@ -207,9 +234,9 @@ export default function AIPosterWizard() {
     }
   };
 
-  // Harmonize design
+  // Harmonize design - SIMPLIFIED: Just use selected background
   const handleHarmonize = async () => {
-    if (!campaignId || !selectedBackground) {
+    if (!campaignId || selectedBackground === null) {
       setError('Please select a background first.');
       return;
     }
@@ -218,34 +245,27 @@ export default function AIPosterWizard() {
     setError(null);
 
     try {
-      // Extract musicians from event data
-      const musicProviders = eventData?.selections?.music || [];
-      const musicianPhotos = musicProviders
-        .map(p => p.photo)
-        .filter(Boolean);
-
-  const response = await fetch(buildPlannerApiUrl('/api/design/harmonize'), {
-        method: 'POST',
-        headers: withPlannerKey({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          campaign_id: campaignId,
-          bg_choice_idx: selectedBackground,
-          musician_image_urls: musicianPhotos,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setHarmonizedImages(data.harmonized_images || []);
-      setSuccess('✨ Harmonization complete!');
-      setActiveStep(3);
+      // Just use the selected background directly - no AI harmonization
+      const selectedBg = backgrounds[selectedBackground];
+      
+      // Set it as harmonized image immediately
+      setHarmonizedImages([
+        {
+          image_url: selectedBg.image_url,
+          model: 'manual_editing',
+          prompt: 'Ready for manual editing'
+        }
+      ]);
+      
+      // Small delay to ensure state updates before moving to next step
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setSuccess('✨ Background ready for editing!');
+      setActiveStep(2); // Move to Manual Editor step
       
     } catch (err) {
       console.error('Harmonize error:', err);
-      setError(`Failed to harmonize: ${err.message}`);
+      setError(`Failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -511,7 +531,7 @@ export default function AIPosterWizard() {
                     },
                   }}
                 >
-                  Harmonize Design
+                  Open Editor
                 </Button>
               </Box>
             )}
@@ -527,23 +547,16 @@ export default function AIPosterWizard() {
           >
             <Box sx={{ mb: 3, textAlign: 'center' }}>
               <Typography variant="h5" sx={{ color: '#F9DBBA', fontWeight: 700, mb: 1 }}>
-                Design Harmonization
+                Manual Editor
               </Typography>
               <Typography variant="body2" sx={{ color: 'rgba(249, 219, 186, 0.7)' }}>
-                Adding event details and musicians to your poster
+                Edit your poster manually - add text, artists, and customize
               </Typography>
             </Box>
 
-            {harmonizedImages.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 6 }}>
-                <CircularProgress sx={{ color: '#5B99C2', mb: 2 }} size={60} />
-                <Typography sx={{ color: '#F9DBBA', fontSize: '1.1rem' }}>
-                  Harmonizing your design...
-                </Typography>
-              </Box>
-            ) : (
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 3 }}>
-                {harmonizedImages.map((img, idx) => (
+            {/* Always show images - hardcoded fallback initialized in state */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 3 }}>
+              {harmonizedImages.map((img, idx) => (
                   <MotionCard
                     key={idx}
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -560,7 +573,7 @@ export default function AIPosterWizard() {
                     <Box
                       component="img"
                       src={img.image_url}
-                      alt={`Harmonized ${idx + 1}`}
+                      alt={`Editor Background ${idx + 1}`}
                       sx={{
                         width: '100%',
                         height: 500,
@@ -588,7 +601,6 @@ export default function AIPosterWizard() {
                   </MotionCard>
                 ))}
               </Box>
-            )}
           </MotionBox>
         );
 
