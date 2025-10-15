@@ -2,6 +2,17 @@
 
 Welcome to the Musical Event Planner project! This guide outlines the setup and workflow for contributing to our specialised planner focused on live musical experiences in Colombo.
 
+## ♻️ Repository Cleanup (2025-10-15)
+
+We've removed placeholder documentation, unused integration tests, and dormant Python security scaffolding that weren't part of the event planner → post-generation scope. Key deletions include:
+
+- Legacy planning docs such as `AGENT_MIGRATION_COMPLETE.md`, `SYSTEM_ARCHITECTURE.md`, and other empty merge artifacts.
+- Obsolete Python test stubs (`test_ai_generation.py`, `test_complete_system.py`, `test_venues.py`) and helper shells under `backend-py/tests/`.
+- Unused Python agent stubs (`backend-py/agents/poster_prompt_agent.py`) and placeholder security package files.
+- A deprecated frontend scraper prototype at `frontend/src/lib/collectionScraper.js`.
+
+Only the planner → post-generation flow remains in scope; new work should avoid reintroducing these artifacts.
+
 ## 1. Development Workflow
 
 This project uses a feature-branch workflow to keep the `main` branch clean and stable.

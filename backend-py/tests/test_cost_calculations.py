@@ -1,3 +1,20 @@
+"""Cost calculation regression tests.
+
+Ensures the FastAPI planner's budgeting utilities keep honoring
+our expected venue pricing rules even when tests are executed from
+the repository root (Pytest no longer prepends `backend-py` to
+`sys.path` by default).
+"""
+
+from __future__ import annotations
+
+import pathlib
+import sys
+
+BACKEND_ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
+
 from planner.service import calculate_venue_cost, generate_dynamic_costs
 
 
