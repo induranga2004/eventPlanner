@@ -2,16 +2,26 @@
 
 Welcome to the Musical Event Planner project! This guide outlines the setup and workflow for contributing to our specialised planner focused on live musical experiences in Colombo.
 
-## ♻️ Repository Cleanup (2025-10-15)
+## 📌 Current scope focus (planner → post-generation)
 
-We've removed placeholder documentation, unused integration tests, and dormant Python security scaffolding that weren't part of the event planner → post-generation scope. Key deletions include:
+We’re explicitly investing in the pipeline that starts with campaign planning and ends with AI-driven poster delivery. To keep velocity high:
 
-- Legacy planning docs such as `AGENT_MIGRATION_COMPLETE.md`, `SYSTEM_ARCHITECTURE.md`, and other empty merge artifacts.
-- Obsolete Python test stubs (`test_ai_generation.py`, `test_complete_system.py`, `test_venues.py`) and helper shells under `backend-py/tests/`.
-- Unused Python agent stubs (`backend-py/agents/poster_prompt_agent.py`) and placeholder security package files.
-- A deprecated frontend scraper prototype at `frontend/src/lib/collectionScraper.js`.
+- **In scope:** Frontend planner journeys, Node auth/subscription/2FA APIs, Python planner & design services, provider integrations, poster/post-generation assets.
+- **Out of scope:** Social sharing, marketing copy bots, downstream distribution tooling, or legacy merge artifacts that referenced them.
 
-Only the planner → post-generation flow remains in scope; new work should avoid reintroducing these artifacts.
+Use this guardrail any time you decide whether to keep or prune a feature.
+
+## ♻️ Cleanup & hardening roadmap (locked 2025-10-15)
+
+| Phase | Theme | Highlights |
+| --- | --- | --- |
+| 1 | **Environment & docs alignment** | Refresh this README and `PROJECT_DOCUMENTATION.md` with real port usage and dual-backend expectations; normalise every `.env.example` for planner → post-gen needs only; archive/delete empty merge Markdown once content lands in canonical docs. |
+| 2 | **Backend hardening** | Node: keep auth/subscription/2FA endpoints, migrate or retire `/api/test/*` helpers, tighten service-token guards where still used. Python: persist event context, require API keys/JWT for planner/design routes, document JSON contracts. |
+| 3 | **Frontend consolidation** | Merge planner results variants, standardise `apiNode`/`apiPlanner` clients, remove mock/localStorage fallbacks, persist selected concept/providers back to Python, retire `Wizard.jsx` in favour of the upgraded poster wizard. |
+| 4 | **Quality gates** | Add FastAPI tests for auth/persistence, Node integration tests for auth/2FA, React Testing Library smoke for planner→poster, wire lint/format checks across repos. |
+| 5 | **Forward-looking (in-scope)** | Define shared TypeScript/Pydantic schemas, add focused telemetry for planner & harmonisation, evaluate managed asset storage once the pipeline is steady. |
+
+Stick to this sequence unless a bug forces a tactical fix.
 
 ## 1. Development Workflow
 

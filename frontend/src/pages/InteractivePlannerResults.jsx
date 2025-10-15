@@ -33,12 +33,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useEventPlanning } from '../contexts/EventPlanningContext';
-
-const API_BASE = (
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  'http://127.0.0.1:1800'
-).replace(/\/$/, '');
+import { withPlannerKey } from '../api/plannerHeaders.js';
+import { buildPlannerApiUrl } from '../config/api.js';
 
 const MotionCard = motion(Card);
 
@@ -205,7 +201,10 @@ function ProviderSelectionModal({ open, onClose, concept, campaignCity, budgetPe
       if (budget) params.append('max_budget_lkr', budget.toString());
 
       const response = await fetch(
-        `${API_BASE}/planner/providers/${category}?${params.toString()}`
+        `${buildPlannerApiUrl(`/planner/providers/${category}`)}?${params.toString()}`,
+        {
+          headers: withPlannerKey(),
+        }
       );
       
       if (!response.ok) throw new Error('Failed to fetch providers');
@@ -598,9 +597,9 @@ export default function InteractivePlannerResults({ data, campaignId }) {
     
     try {
       // Call your new /planner/regenerate-name endpoint
-  const response = await fetch(`${API_BASE}/planner/regenerate-name`, {
+      const response = await fetch(buildPlannerApiUrl('/planner/regenerate-name'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withPlannerKey({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           vibe: 'high-energy musical night',
           city: campaignCity,

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from config.database import engine, get_db, Base
 from config.settings import load_environment
 from models.campaign import Campaign
+from models.event_context import EventContextRecord
 from routers.planner import router as planner_router
 from routers.venues import router as venues_router
 from routers.concept_names import router as concept_names_router

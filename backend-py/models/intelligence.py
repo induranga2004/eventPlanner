@@ -72,8 +72,9 @@ class CulturalAnalysis(BaseModel):
     language_analysis: LanguageAnalysis
     confidence_score: float = Field(ge=0.0, le=1.0)
 
+
 class ColorPalette(BaseModel):
-    primary_colors: List[str] = Field(min_items=2, max_items=5)
+    primary_colors: List[str] = Field(min_length=2, max_length=5)
     accent_colors: List[str] = []
     cultural_significance: Optional[str] = None
     mood: str

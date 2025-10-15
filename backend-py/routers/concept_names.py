@@ -1,12 +1,18 @@
 # backend-py/routers/concept_names.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import logging
 import os
 from openai import OpenAI, APIError
 
-router = APIRouter(prefix="/planner", tags=["concept-names"])
+from dependencies.api_key import require_planner_api_key
+
+router = APIRouter(
+    prefix="/planner",
+    tags=["concept-names"],
+    dependencies=[Depends(require_planner_api_key)],
+)
 logger = logging.getLogger(__name__)
 
 class ConceptNameRequest(BaseModel):

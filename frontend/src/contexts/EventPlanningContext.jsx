@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { buildPlannerApiUrl, getPlannerHeaders } from '../config/api.js';
 
 const EventPlanningContext = createContext(null);
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:1800';
 
 export const EventPlanningProvider = ({ children }) => {
   const [eventData, setEventData] = useState(null);
@@ -40,7 +39,9 @@ export const EventPlanningProvider = ({ children }) => {
       setEventData(data);
       
       // Persist to backend
-      await axios.post(`${API_BASE}/api/event-context/save`, data);
+      await axios.post(buildPlannerApiUrl('/api/event-context/save'), data, {
+        headers: getPlannerHeaders(),
+      });
       
       return { success: true };
     } catch (err) {
@@ -74,7 +75,9 @@ export const EventPlanningProvider = ({ children }) => {
     setError(null);
     
     try {
-      const response = await axios.get(`${API_BASE}/api/event-context/${campaignId}`);
+      const response = await axios.get(buildPlannerApiUrl(`/api/event-context/${campaignId}`), {
+        headers: getPlannerHeaders(),
+      });
       setEventData(response.data);
       return response.data;
     } catch (err) {

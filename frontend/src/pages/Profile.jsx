@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { me } from "../api/auth";
+import { buildNodeApiUrl } from "../config/api.js";
 import { useNavigate, Link as RouterLink } from 'react-router-dom'
 import { 
   Container, 
@@ -371,7 +372,7 @@ export default function Profile() {
     
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:4000/api/auth/update-profile', {
+  const response = await fetch(buildNodeApiUrl('/api/auth/update-profile'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

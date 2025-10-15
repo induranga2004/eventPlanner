@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import Response
 import re
 import base64
@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 from urllib.parse import urlparse
 from PIL import Image
+from sqlalchemy.orm import Session
 
 from models.design import (
     StartDesignRequest,
@@ -32,7 +33,8 @@ from models.design import (
     StylePrefs,
     Event,
 )
-from models.event_context import EventContext
+from models.event_context import EventContext, EventContextRecord
+from config.database import get_db
 from services.cloudinary_store import init_cloudinary, upload_image_bytes, public_id, save_manifest
 from services.ai_flux import AI_ENABLE_FLUX, gradient_background, harmonize_img2img, generate_background
 from services.context_manager import design_context
@@ -43,7 +45,6 @@ from services.event_aware_prompts import (
     infer_genre_from_musicians,
     extract_city,
 )
-from routers.event_context import event_contexts
 from prompts.design_prompts import build_harmonize_prompt, build_bg_prompt
 
 router = APIRouter()
@@ -321,10 +322,19 @@ def start_design(payload: StartDesignRequest):
 
 
 @router.post("/generate-backgrounds", response_model=BackgroundGenerationResponse)
-def generate_backgrounds(payload: BackgroundGenerationRequest):
-    context = event_contexts.get(payload.campaign_id)
-    if not context:
+def generate_backgrounds(
+    payload: BackgroundGenerationRequest,
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(EventContextRecord)
+        .filter(EventContextRecord.campaign_id == payload.campaign_id)
+        .one_or_none()
+    )
+    if not record or not record.data:
         raise HTTPException(404, "Event context not found for this campaign. Save planning data first.")
+
+    context = EventContext(**record.data)
 
     design_request = _build_design_request_from_context(context)
     style_prefs = design_request.style_prefs or StylePrefs()

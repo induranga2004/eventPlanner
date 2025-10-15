@@ -1,12 +1,98 @@
 const express = require('express');
+const { URL } = require('url');
 const router = express.Router();
 const User = require('../models/User');
+const StripeEventLog = require('../models/StripeEventLog');
 const auth = require('../middleware/auth');
+
+const SERVICE_TOKEN_HEADER = 'x-service-token';
+const manualUpgradeToken = process.env.MANUAL_UPGRADE_TOKEN;
+const isProduction = process.env.NODE_ENV === 'production';
+
+class ConfigError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ConfigError';
+  }
+}
+
+const ensureStripeSecret = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new ConfigError('Stripe secret key is not configured. Set STRIPE_SECRET_KEY in the environment.');
+  }
+};
+
+const buildCheckoutUrls = () => {
+  const baseUrl = process.env.FRONTEND_URL;
+  if (!baseUrl) {
+    throw new ConfigError('Frontend URL is not configured. Set FRONTEND_URL in the environment.');
+  }
+
+  let successUrlString;
+  let cancelUrlString;
+  try {
+    const successUrl = new URL('/payment/success', baseUrl);
+    successUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
+    successUrlString = successUrl.toString();
+
+    const cancelUrl = new URL('/payment/cancel', baseUrl);
+    cancelUrlString = cancelUrl.toString();
+  } catch (error) {
+    throw new ConfigError('FRONTEND_URL must be a valid absolute URL.');
+  }
+
+  return { successUrl: successUrlString, cancelUrl: cancelUrlString };
+};
+
+const logDebug = (...args) => {
+  if (!isProduction) {
+    console.log(...args);
+  }
+};
+
+const logError = (message, error, context = {}) => {
+  const details = { ...context };
+  if (error) {
+    details.error = error.message;
+    if (error.code) {
+      details.code = error.code;
+    }
+  }
+  console.error(`[Stripe] ${message}`, Object.keys(details).length ? details : '');
+};
+
+const hasProcessedEvent = async (eventId) => {
+  if (!eventId) {
+    return false;
+  }
+  return StripeEventLog.exists({ eventId });
+};
+
+const markEventProcessed = async (eventId, type, metadata = {}) => {
+  if (!eventId) {
+    return;
+  }
+
+  try {
+    await StripeEventLog.create({ eventId, type, metadata });
+  } catch (error) {
+    if (error.code !== 11000) {
+      logError('Failed to mark Stripe event as processed', error, { eventId, type });
+    }
+  }
+};
+
+const ensurePaymentHistory = (user) => {
+  if (!Array.isArray(user.paymentHistory)) {
+    user.paymentHistory = [];
+  }
+};
 
 // Initialize Stripe lazily to ensure env vars are loaded
 let stripe;
 const getStripe = () => {
   if (!stripe) {
+    ensureStripeSecret();
     stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
   }
   return stripe;
@@ -15,7 +101,13 @@ const getStripe = () => {
 // Create Stripe checkout session for Pro subscription
 router.post('/create-checkout-session', auth, async (req, res) => {
   try {
+    const { successUrl, cancelUrl } = buildCheckoutUrls();
     const stripe = getStripe();
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
     const user = await User.findById(req.user.id);
     
     if (!user) {
@@ -35,7 +127,7 @@ router.post('/create-checkout-session', auth, async (req, res) => {
       } catch (error) {
         // If customer doesn't exist in Stripe, create a new one
         if (error.code === 'resource_missing') {
-          console.log(`Customer ${user.stripeCustomerId} not found in Stripe, creating new customer`);
+          logDebug('Stripe customer missing, creating new customer', user.stripeCustomerId);
           customer = await stripe.customers.create({
             email: user.email,
             name: user.name,
@@ -68,10 +160,7 @@ router.post('/create-checkout-session', auth, async (req, res) => {
     }
 
     // Create checkout session
-    console.log('Creating Stripe checkout session...');
-    console.log('Frontend URL:', process.env.FRONTEND_URL);
-    console.log('Success URL will be:', `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`);
-    console.log('Cancel URL will be:', `${process.env.FRONTEND_URL}/payment/cancel`);
+    logDebug('Creating Stripe checkout session for user', user._id.toString());
     
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
@@ -93,21 +182,23 @@ router.post('/create-checkout-session', auth, async (req, res) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         userId: user._id.toString(),
         plan: 'pro'
       }
     });
 
-    console.log('Checkout session created successfully:');
-    console.log('Session ID:', session.id);
-    console.log('Session URL:', session.url);
+    logDebug('Checkout session created successfully', session.id);
     
     res.json({ url: session.url, sessionId: session.id });
   } catch (error) {
-    console.error('Checkout session creation error:', error);
+    if (error instanceof ConfigError) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    console.error('Checkout session creation error:', error.message, error.code ? `(code: ${error.code})` : '');
     res.status(500).json({ error: 'Failed to create checkout session' });
   }
 });
@@ -165,150 +256,209 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   const sig = req.headers['stripe-signature'];
   let event;
 
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    logError('Stripe webhook secret not configured. Set STRIPE_WEBHOOK_SECRET to process webhooks securely.');
+    return res.status(500).json({ error: 'Stripe webhook secret is not configured' });
+  }
+
+  if (!sig) {
+    return res.status(400).json({ error: 'Missing Stripe signature header' });
+  }
+
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+  } catch (error) {
+    logError('Webhook signature verification failed', error);
+    return res.status(400).send(`Webhook Error: ${error.message}`);
   }
 
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      await handleCheckoutCompleted(event.data.object);
-      break;
-    case 'customer.subscription.updated':
-      await handleSubscriptionUpdated(event.data.object);
-      break;
-    case 'customer.subscription.deleted':
-      await handleSubscriptionDeleted(event.data.object);
-      break;
-    case 'invoice.payment_succeeded':
-      await handlePaymentSucceeded(event.data.object);
-      break;
-    case 'invoice.payment_failed':
-      await handlePaymentFailed(event.data.object);
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
+  const { id: eventId, type: eventType } = event;
 
-  res.json({ received: true });
+  try {
+    if (await hasProcessedEvent(eventId)) {
+      logDebug('Skipping already processed Stripe event', eventId, eventType);
+      return res.json({ received: true, duplicate: true });
+    }
+
+    const handler = getStripeEventHandler(eventType);
+
+    if (!handler) {
+      logDebug('Unhandled Stripe event type', eventType);
+      await markEventProcessed(eventId, eventType, { ignored: true });
+      return res.json({ received: true, ignored: true });
+    }
+
+    await handler(event.data.object, event);
+    await markEventProcessed(eventId, eventType);
+
+    return res.json({ received: true });
+  } catch (error) {
+    logError('Stripe webhook processing failed', error, { eventId, eventType });
+    return res.status(500).json({ error: 'Failed to process Stripe webhook event' });
+  }
 });
+
+const stripeEventHandlers = {
+  'checkout.session.completed': handleCheckoutCompleted,
+  'customer.subscription.updated': handleSubscriptionUpdated,
+  'customer.subscription.deleted': handleSubscriptionDeleted,
+  'invoice.payment_succeeded': handlePaymentSucceeded,
+  'invoice.payment_failed': handlePaymentFailed,
+};
+
+function getStripeEventHandler(eventType) {
+  return stripeEventHandlers[eventType];
+}
 
 // Helper functions for webhook handlers
 async function handleCheckoutCompleted(session) {
+  const userId = session?.metadata?.userId;
+
+  if (!userId) {
+    logError('Checkout session missing user metadata', null, { sessionId: session?.id });
+    return;
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    logError('User not found for checkout session', null, { userId, sessionId: session?.id });
+    return;
+  }
+
   try {
-    const userId = session.metadata.userId;
-    const user = await User.findById(userId);
-    
-    if (user) {
-      // Update user to Pro
-      user.subscriptionPlan = 'pro';
-      user.subscriptionStatus = 'active';
-      user.proFeatures = {
-        unlimitedEvents: true,
-        advancedAnalytics: true,
-        prioritySupport: true,
-        customBranding: true,
-        apiAccess: true,
-        verifiedBadge: true
-      };
-      
-      // Get subscription details
-      const stripe = getStripe();
-      const subscription = await stripe.subscriptions.retrieve(session.subscription);
-      user.stripeSubscriptionId = subscription.id;
-      user.subscriptionExpiry = new Date(subscription.current_period_end * 1000);
-      
-      await user.save();
-      console.log(`User ${userId} upgraded to Pro`);
-    }
+    user.subscriptionPlan = 'pro';
+    user.subscriptionStatus = 'active';
+    user.proFeatures = {
+      unlimitedEvents: true,
+      advancedAnalytics: true,
+      prioritySupport: true,
+      customBranding: true,
+      apiAccess: true,
+      verifiedBadge: true,
+    };
+
+    const stripe = getStripe();
+    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    user.stripeSubscriptionId = subscription.id;
+    user.subscriptionExpiry = new Date(subscription.current_period_end * 1000);
+
+    await user.save();
+    logDebug('User upgraded to Pro via checkout session', user._id.toString());
   } catch (error) {
-    console.error('Error handling checkout completed:', error);
+    logError('Error handling checkout completed', error, { userId, sessionId: session?.id });
+    throw error;
   }
 }
 
 async function handleSubscriptionUpdated(subscription) {
   try {
     const user = await User.findOne({ stripeCustomerId: subscription.customer });
-    
-    if (user) {
-      user.subscriptionStatus = subscription.status;
-      user.subscriptionExpiry = new Date(subscription.current_period_end * 1000);
-      await user.save();
+
+    if (!user) {
+      logError('Subscription update received for unknown customer', null, { customerId: subscription.customer });
+      return;
     }
+
+    user.subscriptionStatus = subscription.status;
+    user.subscriptionExpiry = new Date(subscription.current_period_end * 1000);
+    await user.save();
   } catch (error) {
-    console.error('Error handling subscription updated:', error);
+    logError('Error handling subscription updated', error, { customerId: subscription.customer });
+    throw error;
   }
 }
 
 async function handleSubscriptionDeleted(subscription) {
   try {
     const user = await User.findOne({ stripeCustomerId: subscription.customer });
-    
-    if (user) {
-      user.subscriptionPlan = 'free';
-      user.subscriptionStatus = 'expired';
-      user.proFeatures = {
-        unlimitedEvents: false,
-        advancedAnalytics: false,
-        prioritySupport: false,
-        customBranding: false,
-        apiAccess: false,
-        verifiedBadge: false
-      };
-      await user.save();
+
+    if (!user) {
+      logError('Subscription deletion received for unknown customer', null, { customerId: subscription.customer });
+      return;
     }
+
+    user.subscriptionPlan = 'free';
+    user.subscriptionStatus = 'expired';
+    user.proFeatures = {
+      unlimitedEvents: false,
+      advancedAnalytics: false,
+      prioritySupport: false,
+      customBranding: false,
+      apiAccess: false,
+      verifiedBadge: false,
+    };
+    await user.save();
   } catch (error) {
-    console.error('Error handling subscription deleted:', error);
+    logError('Error handling subscription deleted', error, { customerId: subscription.customer });
+    throw error;
   }
 }
 
 async function handlePaymentSucceeded(invoice) {
   try {
     const user = await User.findOne({ stripeCustomerId: invoice.customer });
-    
-    if (user) {
-      // Add to payment history
-      user.paymentHistory.push({
-        amount: invoice.amount_paid / 100, // Convert from cents
-        currency: invoice.currency,
-        date: new Date(invoice.created * 1000),
-        status: 'succeeded',
-        invoiceId: invoice.id
-      });
-      await user.save();
+
+    if (!user) {
+      logError('Payment succeeded for unknown customer', null, { customerId: invoice.customer, invoiceId: invoice.id });
+      return;
     }
+
+    ensurePaymentHistory(user);
+
+    user.paymentHistory.push({
+      amount: invoice.amount_paid / 100,
+      currency: invoice.currency,
+      date: new Date(invoice.created * 1000),
+      status: 'succeeded',
+      invoiceId: invoice.id,
+    });
+    await user.save();
   } catch (error) {
-    console.error('Error handling payment succeeded:', error);
+    logError('Error handling payment succeeded', error, { customerId: invoice.customer, invoiceId: invoice.id });
+    throw error;
   }
 }
 
 async function handlePaymentFailed(invoice) {
   try {
     const user = await User.findOne({ stripeCustomerId: invoice.customer });
-    
-    if (user) {
-      // Add to payment history
-      user.paymentHistory.push({
-        amount: invoice.amount_due / 100,
-        currency: invoice.currency,
-        date: new Date(invoice.created * 1000),
-        status: 'failed',
-        invoiceId: invoice.id
-      });
-      await user.save();
+
+    if (!user) {
+      logError('Payment failed for unknown customer', null, { customerId: invoice.customer, invoiceId: invoice.id });
+      return;
     }
+
+    ensurePaymentHistory(user);
+
+    user.paymentHistory.push({
+      amount: invoice.amount_due / 100,
+      currency: invoice.currency,
+      date: new Date(invoice.created * 1000),
+      status: 'failed',
+      invoiceId: invoice.id,
+    });
+    await user.save();
   } catch (error) {
-    console.error('Error handling payment failed:', error);
+    logError('Error handling payment failed', error, { customerId: invoice.customer, invoiceId: invoice.id });
+    throw error;
   }
 }
 
 // Manual upgrade endpoint for development (simulates successful payment)
 router.post('/manual-upgrade', auth, async (req, res) => {
   try {
-    console.log('Manual upgrade triggered for user:', req.user.id);
+    const providedToken = req.headers[SERVICE_TOKEN_HEADER];
+
+    if (manualUpgradeToken) {
+      if (providedToken !== manualUpgradeToken) {
+        return res.status(403).json({ error: 'Invalid service token for manual upgrade' });
+      }
+    } else if (isProduction) {
+      return res.status(403).json({ error: 'Manual upgrade is disabled in production without MANUAL_UPGRADE_TOKEN' });
+    }
+
+    logDebug('Manual upgrade triggered for user', req.user?.id);
     
     const user = await User.findById(req.user.id);
     
@@ -335,7 +485,7 @@ router.post('/manual-upgrade', auth, async (req, res) => {
 
     await user.save();
     
-    console.log(`✅ User ${user.email} manually upgraded to Pro`);
+  logDebug('User manually upgraded to Pro', user.email);
     
     res.json({ 
       message: 'Successfully upgraded to Pro', 

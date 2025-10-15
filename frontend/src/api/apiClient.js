@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { getNodeApiBase } from '../config/api.js'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
+const baseURL = getNodeApiBase()
 
 if (import.meta.env.DEV) {
   // Helpful debug in dev tools to confirm which base URL is used

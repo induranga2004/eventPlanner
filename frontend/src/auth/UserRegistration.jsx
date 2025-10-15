@@ -43,10 +43,10 @@ export default function UserRegistration() {
   };
 
   return (
-    <AuthLayout
-        title="Create your Event Planner workspace"
-        subtitle="Build detailed timelines, collaborate with vendors, and share polished deliverables."
-        description="Set up your account in under two minutes and start orchestrating unforgettable experiences."
+  <AuthLayout
+    title="Create your Event Planner workspace"
+    subtitle="Build detailed timelines, align your team, and share polished deliverables."
+    description="Set up your account in under two minutes and start orchestrating unforgettable experiences."
       sideContent={
         <Stack spacing={3}>
           <Stack direction="row" spacing={2} alignItems="center">
@@ -56,7 +56,7 @@ export default function UserRegistration() {
             </Typography>
           </Stack>
           <Stack spacing={1.5}>
-            {['Client-ready proposals', 'Collaborative vendor boards', 'AI-assisted run sheets'].map((item) => (
+            {['Client-ready proposals', 'Shared planning dashboards', 'AI-assisted run sheets'].map((item) => (
               <Stack
                 key={item}
                 direction="row"

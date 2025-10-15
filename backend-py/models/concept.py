@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class Concept(BaseModel):
@@ -21,17 +21,19 @@ class Concept(BaseModel):
 	providers: Dict[str, List[str]] = Field(default_factory=dict)
 	catering_style: Optional[str] = None  # Backwards compatibility shim
 
-	@validator("target_pp_lkr", pre=True, always=True)
-	def _coerce_target(cls, value: int) -> int:  # noqa: D417
+	@field_validator("target_pp_lkr", mode="before")
+	def _coerce_target(cls, value: Any) -> int:  # noqa: D417
 		try:
 			int_value = int(value)
 			return max(int_value, 0)
 		except (TypeError, ValueError):
 			return 0
 
-	@validator("cost_split", pre=True, always=True)
-	def _coerce_split(cls, value: Dict[str, float]) -> Dict[str, float]:  # noqa: D417
+	@field_validator("cost_split", mode="before")
+	def _coerce_split(cls, value: Any) -> Dict[str, float]:  # noqa: D417
 		if not value:
+			return {}
+		if not isinstance(value, dict):
 			return {}
 		coerced: Dict[str, float] = {}
 		for key, weight in value.items():
@@ -41,10 +43,12 @@ class Concept(BaseModel):
 				continue
 		return coerced
 
-	@validator("default_features", pre=True, always=True)
-	def _ensure_features(cls, value: List[str]) -> List[str]:  # noqa: D417
+	@field_validator("default_features", mode="before")
+	def _ensure_features(cls, value: Any) -> List[str]:  # noqa: D417
 		if not value:
 			return []
+		if isinstance(value, str):
+			value = [value]
 		return [str(item).strip() for item in value if str(item).strip()]
 
 	def normalized_split(self) -> Dict[str, float]:

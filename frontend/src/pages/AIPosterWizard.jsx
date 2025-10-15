@@ -32,11 +32,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEventPlanning } from '../contexts/EventPlanningContext';
 import { mapEventContextToAIPayload, generateSmartQuery } from '../utils/eventToAIMapper';
+import { buildPlannerApiUrl } from '../config/api.js';
+import { withPlannerKey } from '../api/plannerHeaders.js';
 
 const MotionCard = motion(Card);
 const MotionBox = motion(Box);
-
-const API_BASE = 'http://127.0.0.1:1800';
 
 const steps = [
   'Event Context',
@@ -102,9 +102,9 @@ export default function AIPosterWizard() {
     try {
       const payload = mapEventContextToAIPayload(eventData);
       
-      const response = await fetch(`${API_BASE}/design/start-from-event`, {
+      const response = await fetch(buildPlannerApiUrl('/design/start-from-event'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withPlannerKey({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
 
@@ -140,9 +140,9 @@ export default function AIPosterWizard() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/design/generate-backgrounds`, {
+      const response = await fetch(buildPlannerApiUrl('/design/generate-backgrounds'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withPlannerKey({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           campaign_id: cid,
           user_query: customQuery || generateSmartQuery(eventData),
@@ -183,9 +183,9 @@ export default function AIPosterWizard() {
         .map(p => p.photo)
         .filter(Boolean);
 
-      const response = await fetch(`${API_BASE}/design/harmonize`, {
+      const response = await fetch(buildPlannerApiUrl('/design/harmonize'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withPlannerKey({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           campaign_id: campaignId,
           bg_choice_idx: selectedBackground,

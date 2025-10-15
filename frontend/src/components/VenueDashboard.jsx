@@ -20,6 +20,7 @@ import UpgradeModal from './UpgradeModal';
 import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription, useProAccess } from '../hooks/useSubscription';
+import { buildNodeAssetUrl } from '../config/api.js';
 
 // Create Motion components
 const MotionPaper = motion.create(Paper);
@@ -465,14 +466,14 @@ const VenueDashboard = () => {
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     {user.photo && (
                       <Box component="img"
-                        src={`http://localhost:4000${user.photoBgRemoved || user.photo}`}
+                        src={buildNodeAssetUrl(user.photoBgRemoved || user.photo)}
                         alt="Primary"
                         sx={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 1 }}
                       />
                     )}
                     {user.additionalPhoto && (
                       <Box component="img"
-                        src={`http://localhost:4000${user.additionalPhotoBgRemoved || user.additionalPhoto}`}
+                        src={buildNodeAssetUrl(user.additionalPhotoBgRemoved || user.additionalPhoto)}
                         alt="Additional"
                         sx={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 1 }}
                       />

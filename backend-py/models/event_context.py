@@ -1,6 +1,11 @@
-from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel
+from sqlalchemy import Column, DateTime, String
+from sqlalchemy.types import JSON
+
+from config.database import Base
 
 class ProviderSelection(BaseModel):
     venue: Optional[Any] = None
@@ -21,7 +26,11 @@ class EventContext(BaseModel):
     timestamp: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
-class EventContextResponse(BaseModel):
-    campaign_id: str
-    data: EventContext
-    created_at: datetime
+class EventContextRecord(Base):
+    __tablename__ = "event_contexts"
+
+    campaign_id = Column(String, primary_key=True)
+    event_name = Column(String, nullable=False)
+    data = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

@@ -1,10 +1,15 @@
 # backend-py/routers/venues.py
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from typing import List, Optional
 from agents.venue_finder import find_venues
+from dependencies.api_key import require_planner_api_key
 
-router = APIRouter(prefix="/venues", tags=["venues"])
+router = APIRouter(
+    prefix="/venues",
+    tags=["venues"],
+    dependencies=[Depends(require_planner_api_key)],
+)
 
 class VenueOut(BaseModel):
     name: Optional[str] = None

@@ -1,8 +1,8 @@
-# Event Planner Project - Complete Technical Documentation
+# Event Planner Project – Planner → Post-Generation Technical Guide
 
 ## 📋 Project Overview
 
-The **Event Planner** is a full-stack web application that helps users plan events and generate AI-powered social media content. The project is built using a modern tech stack with three main components working together.
+The **Event Planner** experience now targets a single mission: capture a campaign brief, curate data-backed plans, and deliver AI-generated posters. Everything in this document leans into that pipeline while explicitly leaving out social sharing or downstream distribution tooling.
 
 ---
 
@@ -11,15 +11,15 @@ The **Event Planner** is a full-stack web application that helps users plan even
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   FRONTEND      │    │   BACKEND-NODE   │    │   BACKEND-PY    │
-│   (React/Vite)  │◄──►│   (Node.js)      │◄──►│   (Python)      │
-│   Port: 5173    │    │   Port: 4000     │    │   Port: 8000    │
+│   (React/Vite)  │◄──►│   (Node.js)      │◄──►│   (Python/FastAPI)│
+│   Port: 5173    │    │   Port: 4000     │    │   Port: 1800    │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
         │                        │                        │
         │                        │                        │
-        └──── User Interface ────┼──── Core Business ────┼──── AI Features
-             Authentication       │     Logic & DB        │     Content Gen
-             Event Management     │     User Management   │     Event Planning
-             Social Sharing       │     API Gateway       │     Post Creation
+  └──── Planner UX ────────┼──── Auth Services ────┼──── Planner & Poster APIs
+       Auth + 2FA           │     Subscriptions      │     Campaign Planning
+  Plan Review          │     Account Support    │     Poster Generation
+       Poster Preview       │     Service Gateway    │     Asset Harmonisation
 ```
 
 ---
@@ -161,28 +161,38 @@ backend-py/
 ```
 
 #### Key Backend-Python Features Implemented:
-- ✅ **FastAPI Framework**: Modern async API framework
-- ✅ **CORS Middleware**: Frontend integration ready
-- ✅ **OpenAI Integration**: AI service connection configured
-- ✅ **Placeholder Architecture**: Structured endpoints for team development
-- ✅ **Health Monitoring**: Service status endpoints
-- ✅ **Environment Validation**: Startup checks for required variables
+- ✅ **FastAPI Framework**: Async API host for planner and design workflows
+- ✅ **Planner Service**: Campaign plan generation, dynamic cost recalculation, and timeline compression
+- ✅ **Provider Bridge**: Surfaces curated provider data from the internal catalog (Mongo-backed)
+- ✅ **Poster Pipeline**: FLUX background generation, harmonisation endpoints, and Cloudinary upload support
+- ✅ **Health Monitoring**: `/health` and `/status` endpoints for readiness probes
+- ✅ **Environment Loading**: Shared `.env` discovery so both backends stay in sync
 
-#### AI Service Endpoints (Placeholders Ready for Implementation):
+#### Planner & design API surface (current focus):
 ```python
-# Event Planning AI (For Dhananjana)
-POST /api/events/suggest-plan        # Generate event suggestions
-POST /api/events/generate-checklist  # Create event checklists
+# Campaign planning
+POST /campaigns/{campaign_id}/planner/generate      # Produce concepts, costs, timeline
+POST /campaigns/{campaign_id}/planner/update-costs  # Recalculate costs for selected concept/venue
+POST /campaigns/{campaign_id}/planner/select        # Persist the concept/providers chosen by the user
 
-# Content Generation AI (For Heshan)  
-POST /api/posts/generate-content     # Create social media posts
-POST /api/posts/optimize-content     # Optimize for different platforms
+# Provider support
+GET  /planner/providers/venue                       # Mongo-backed venue listings
+GET  /planner/providers/music                       # Solo musicians and ensembles
+GET  /planner/providers/lighting                    # Lighting specialists
+GET  /planner/providers/sound                       # Sound engineers
 
-# Integration Endpoints
-POST /api/sharing/prepare-content    # Prepare content for sharing
-GET  /api/templates                 # Available templates
-GET  /api/status                    # AI service status
+# Event context persistence
+POST /api/event-context/save                        # Store planner/poster context blob in SQLite
+GET  /api/event-context/{campaign_id}               # Retrieve stored planner context
+DELETE /api/event-context/{campaign_id}             # Remove stored planner context when archive/delete
+
+# Poster generation
+POST /design/background                             # Generate a background via HF FLUX
+POST /design/harmonize                              # Apply colour harmonisation + overlays
+POST /design/export                                 # Produce final downloadable asset metadata
 ```
+
+> **Security note:** All planner, provider, venue, concept-name, and event-context endpoints now require an `X-API-Key` header matching `PLANNER_API_KEY`/`PLANNER_API_KEYS` in the backend environment.
 
 ---
 
@@ -190,21 +200,37 @@ GET  /api/status                    # AI service status
 
 ### Frontend Environment (`.env`)
 ```
-VITE_API_BASE_URL=http://localhost:4000/api
+VITE_API_BASE_URL=http://localhost:4000/api        # Node auth/subscription/2FA endpoints
+VITE_API_BASE=http://127.0.0.1:1800                # Python planner/poster endpoints
+VITE_PLANNER_API_KEY=planner-dev-key               # Forwarded to FastAPI planner as X-API-Key
 ```
 
 ### Backend-Node Environment (`.env`)
 ```
 PORT=4000
-MONGO_URI="mongodb+srv://[credentials]/eventPlanner"
-JWT_SECRET="[secure-secret-key]"
-CORS_ORIGIN=http://localhost:5173,http://localhost:5174,http://localhost:5175
-```
+MONGO_URI=mongodb://localhost:27017/event-planner   # Optional but required for auth/subscription data
+JWT_SECRET=your-super-secret-jwt-key
+FRONTEND_URL=http://localhost:5173                  # Used for Stripe redirects
+TOTP_SECRET_KEY=development-totp-secret             # 2FA seed
+MANUAL_UPGRADE_TOKEN=dev-service-token              # Required to access /api/subscription/manual-upgrade outside dev
+``` 
 
 ### Backend-Python Environment (`.env`)
 ```
-OPENAI_API_KEY="sk-proj-[your-openai-key]"
-```
+PLANNER_API_KEY=planner-dev-key                     # Single API key accepted for planner/design routes
+# or
+PLANNER_API_KEYS=planner-dev-key,partner-integration
+
+OPENAI_API_KEY=sk-proj-your-openai-key              # Required for AI narratives/posters
+HF_TOKEN=your-hugging-face-token                    # Required for FLUX background generation
+CLOUDINARY_CLOUD_NAME=your_cloud                    # Poster uploads (optional in dev)
+CLOUDINARY_API_KEY=your_key
+CLOUDINARY_API_SECRET=your_secret
+SERPER_API_KEY=optional-search-key                  # Optional for planner web lookups
+USE_AI_CONCEPTS=0                                   # Use bundled concepts by default
+``` 
+
+Client calls must include an `X-API-Key` header matching one of the configured values when hitting planner-related endpoints.
 
 ---
 
@@ -222,17 +248,16 @@ npm start           # Runs on http://localhost:4000
 
 # Terminal 3: Python Backend
 cd backend-py
-uvicorn main:app --reload  # Runs on http://localhost:8000
+uvicorn main:app --host 127.0.0.1 --port 1800 --reload  # Runs on http://127.0.0.1:1800
 ```
 
 ### Team Member Responsibilities
 
 | Team Member | Focus Area | Primary Backend | Key Endpoints |
 |------------|------------|----------------|---------------|
-| **Ravindu** | User Auth & Admin | backend-node | `/auth/login`, `/auth/register` |
-| **Dhananjana** | Event Planning | backend-py | `/api/events/*` |
-| **Heshan** | AI Post Generator | backend-py | `/api/posts/*` |
-| **Hirushan** | Social Sharing | frontend + integration | Frontend sharing + API integration |
+| **Ravindu** | Auth, subscriptions, 2FA services | backend-node | `/api/auth/*`, `/api/2fa/*`, `/api/subscription/*` |
+| **Dhananjana** | Campaign planner & context persistence | backend-py | `/campaigns/*/planner/*`, `/event-context/*` |
+| **Heshan** | Poster generation & asset pipeline | backend-py | `/design/*` |
 
 ---
 
@@ -244,6 +269,9 @@ uvicorn main:app --reload  # Runs on http://localhost:8000
 - **CORS Protection**: Controlled cross-origin access
 - **Environment Security**: Sensitive data in environment variables
 - **API Key Management**: OpenAI key secure storage
+- **Planner API Key Enforcement**: FastAPI planner surface gated by `X-API-Key`
+- **Stripe Hardening**: Checkout/manual upgrade flows require service token and validated config
+- **Persistent Event Contexts**: Planner context stored in SQLite with server-side access controls
 
 ---
 
@@ -254,14 +282,14 @@ uvicorn main:app --reload  # Runs on http://localhost:8000
 Frontend → POST /api/auth/login → Backend-Node → MongoDB → JWT Token → Frontend
 ```
 
-### AI Content Generation Flow
-```
-Frontend → POST /api/posts/generate-content → Backend-Python → OpenAI API → Generated Content → Frontend
-```
-
 ### Event Planning Flow
 ```
-Frontend → POST /api/events/suggest-plan → Backend-Python → AI Processing → Event Suggestions → Frontend
+Frontend → POST /campaigns/{id}/planner/generate → Backend-Python → Planner/AI processing → Planner concepts + timeline → Frontend
+```
+
+### Poster Generation Flow
+```
+Frontend → POST /design/background|harmonize → Backend-Python → HF FLUX + Cloudinary → Poster assets + metadata → Frontend
 ```
 
 ---
@@ -285,48 +313,38 @@ Content-Type: application/json
 ### Test Backend-Python
 ```bash
 # Health Check
-GET http://localhost:8000/
+GET http://127.0.0.1:1800/health
 
-# AI Status Check
-GET http://localhost:8000/api/status
+# Planner status
+GET http://127.0.0.1:1800/status
 ```
 
 ---
 
 ## 📝 Next Steps for Team Members
 
-### For Ravindu (User Auth & Admin):
-- Expand user model with additional fields (name, role, etc.)
-- Implement admin dashboard endpoints
-- Add user profile management features
-- Create user role-based permissions
+### For Ravindu (Auth, Subscriptions, 2FA):
+- Retire any lingering references to vendor catalog routes inside the auth code paths.
+- Ensure subscription and 2FA flows surface clear error messages and rely on environment-driven URLs.
+- Harden `/api/test/*` helpers behind explicit service tokens or remove them once coverage exists.
 
-### For Dhananjana (Event Planning):
-- Implement CrewAI agents in `routers/events.py`
-- Create event planning models in `models/event.py`
-- Build AI-powered event suggestion logic
-- Generate customized event checklists
+### For Dhananjana (Campaign Planner & Context):
+- Expand documentation for planner payload contracts (generate/update/select) and `/event-context` schema snapshots.
+- Build smoke tests that call planner endpoints with the required `X-API-Key` header to prevent regressions.
+- Profile planner DB queries and add indices where necessary once dataset volume increases.
 
-### For Heshan (AI Post Generator):
-- Develop content generation agents in `routers/posts.py`
-- Create post models in `models/post.py`
-- Implement platform-specific content optimization
-- Build social media content templates
-
-### For Hirushan (Social Sharing):
-- Create sharing components in frontend
-- Integrate with generated content from backend-py
-- Implement platform-specific sharing APIs
-- Build sharing analytics and tracking
+### For Heshan (Poster Pipeline):
+- Consolidate poster wizard endpoints (`/design/background`, `/design/harmonize`, `/design/export`) and remove unused variants.
+- Add telemetry hooks (optional) around harmonisation failure points to speed up debugging.
+- Evaluate Cloudinary/S3 upload parity for production readiness once pipeline stabilises.
 
 ---
 
 ## 🔄 Integration Points
 
-1. **Frontend ↔ Backend-Node**: User authentication, user management
-2. **Frontend ↔ Backend-Python**: AI content generation, event planning
-3. **Backend-Node ↔ Backend-Python**: User context for personalized AI responses
-4. **All Services**: Shared user sessions and authentication tokens
+1. **Frontend ↔ Backend-Node**: Authentication, subscriptions, and 2FA-protected flows.
+2. **Frontend ↔ Backend-Python**: Campaign planner endpoints, poster generation, event context CRUD.
+3. **All Services**: Consistent environment-driven base URLs (`VITE_API_BASE_URL`, `VITE_API_BASE`).
 
 ---
 

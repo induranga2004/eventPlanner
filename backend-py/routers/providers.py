@@ -4,9 +4,10 @@ Provider endpoints for fetching venue, music, lighting, and sound options from M
 Supports filtering by city, budget, and other criteria.
 """
 import logging
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from typing import List, Optional
+from dependencies.api_key import require_planner_api_key
 from utils.provider_repository import (
     list_venues,
     list_solo_musicians,
@@ -16,7 +17,11 @@ from utils.provider_repository import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/planner/providers", tags=["providers"])
+router = APIRouter(
+    prefix="/planner/providers",
+    tags=["providers"],
+    dependencies=[Depends(require_planner_api_key)],
+)
 
 # ==================== Response Models ====================
 

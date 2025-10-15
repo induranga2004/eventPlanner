@@ -6,6 +6,7 @@ from typing import List, Optional
 from datetime import date
 
 from config.database import get_db
+from dependencies.api_key import require_planner_api_key
 from models.event_planner import EventPlan, PlanCost, PlanTimeline, SelectedPlan
 from models.campaign import Campaign
 
@@ -23,9 +24,12 @@ from planner.service import (
     generate_dynamic_costs,
 )
 from agents.venue_finder import find_venues
-from services.vendor_client import fetch_vendor_catalog, build_vendor_recommendations
 
-router = APIRouter(prefix="/campaigns", tags=["planner"])
+router = APIRouter(
+    prefix="/campaigns",
+    tags=["planner"],
+    dependencies=[Depends(require_planner_api_key)],
+)
 
 DEFAULT_CITY = "Colombo"
 
@@ -87,9 +91,6 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
     for plan in existing_plans:
         db.delete(plan)
     db.flush()
-
-    vendor_catalog = fetch_vendor_catalog()
-    vendor_recommendations = build_vendor_recommendations(vendor_catalog, body.attendees_estimate)
 
     # Generate concepts and persist
     concept_list: List[Concept] = []
@@ -167,8 +168,6 @@ def generate_plans(campaign_id: str, body: WizardInput, db: Session = Depends(ge
             "recommended_lead_days": recommended_lead_days,
             "venue_booking_risk": risk,
             "venue_booking_note": risk_note,
-            "vendor_catalog": vendor_catalog,
-            "recommended_partners": vendor_recommendations,
         }
     )
     return out

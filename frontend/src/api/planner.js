@@ -1,10 +1,11 @@
 // frontend/src/api/planner.js
-const BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:1800";
+import { withPlannerKey } from './plannerHeaders.js';
+import { buildPlannerApiUrl } from '../config/api.js';
 
 export async function createCampaign(name) {
-  const res = await fetch(`${BASE}/campaigns`, {
+  const res = await fetch(buildPlannerApiUrl('/campaigns'), {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
+    headers: withPlannerKey({"Content-Type":"application/json"}),
     body: JSON.stringify({ name }),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -17,7 +18,9 @@ export async function generatePlans(payload) {
   
   try {
     // Try to get the campaign first
-    const campaignRes = await fetch(`${BASE}/campaigns/${campaignId}`);
+    const campaignRes = await fetch(buildPlannerApiUrl(`/campaigns/${campaignId}`), {
+      headers: withPlannerKey(),
+    });
     if (!campaignRes.ok) {
       // Campaign doesn't exist, create it
       console.log("Creating new campaign...");
@@ -32,14 +35,14 @@ export async function generatePlans(payload) {
     payload.campaign_id = campaignId;
   }
   
-  const url = `${BASE}/campaigns/${campaignId}/planner/generate`;
+  const url = buildPlannerApiUrl(`/campaigns/${campaignId}/planner/generate`);
   console.log("Calling API:", url);
   console.log("Payload:", payload);
   
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: withPlannerKey({"Content-Type":"application/json"}),
       body: JSON.stringify(payload),
     });
     
@@ -61,15 +64,17 @@ export async function generatePlans(payload) {
 }
 
 export async function getResults(campaignId) {
-  const res = await fetch(`${BASE}/campaigns/${campaignId}/planner/results`);
+  const res = await fetch(buildPlannerApiUrl(`/campaigns/${campaignId}/planner/results`), {
+    headers: withPlannerKey(),
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function selectConcept(campaignId, conceptId) {
-  const res = await fetch(`${BASE}/campaigns/${campaignId}/planner/select`, {
+  const res = await fetch(buildPlannerApiUrl(`/campaigns/${campaignId}/planner/select`), {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
+    headers: withPlannerKey({"Content-Type":"application/json"}),
     body: JSON.stringify({ concept_id: conceptId }),
   });
   if (!res.ok) throw new Error(await res.text());

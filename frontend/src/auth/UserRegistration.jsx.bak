@@ -45,7 +45,7 @@ export default function UserRegistration() {
   return (
     <AuthLayout
       title="Create your Event Director workspace"
-      subtitle="Build detailed timelines, collaborate with vendors, and share polished deliverables."
+     subtitle="Build detailed timelines, align your team, and share polished deliverables."
       description="Set up your account in under two minutes and start orchestrating unforgettable experiences."
       sideContent={
         <Stack spacing={3}>
@@ -56,7 +56,7 @@ export default function UserRegistration() {
             </Typography>
           </Stack>
           <Stack spacing={1.5}>
-            {['Client-ready proposals', 'Collaborative vendor boards', 'AI-assisted run sheets'].map((item) => (
+              {['Client-ready proposals', 'Shared planning dashboards', 'AI-assisted run sheets'].map((item) => (
               <Stack
                 key={item}
                 direction="row"

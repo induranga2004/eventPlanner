@@ -5,9 +5,7 @@ const validator = require('validator');
 const multer = require('multer');
 const path = require('path');
 const User = require('../models/User');
-const axios = require('axios');
-const FormData = require('form-data');
-const fs = require('fs');
+const requireAuth = require('./middleware/requireAuth');
 // Background removal feature disabled: keep a noop import for compatibility
 const { removeBackground } = require('../utils/removeBackground');
 
@@ -28,9 +26,6 @@ const signToken = (user) =>
 
 // POST /api/auth/register
 router.post('/register', uploadFields, async (req, res) => {
-  console.log('Request Body:', req.body);
-  console.log('Uploaded Files:', req.files);
-
   const { 
     email, password, role, name, phone, spotifyLink, venueAddress, capacity,
     standardRate,
@@ -186,15 +181,12 @@ router.post('/login', async (req, res) => {
 });
 
 // PUT /api/auth/update-profile
-router.put('/update-profile', async (req, res) => {
+router.put('/update-profile', requireAuth, async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.sub;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -247,8 +239,8 @@ router.put('/update-profile', async (req, res) => {
       email: user.email,
       role: user.role,
       photo: user.photo,
-      phone: user.phone,
-  standardRate: user.standardRate,
+    phone: user.phone,
+    standardRate: user.standardRate,
       twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt,
       // Include all profile fields
@@ -281,9 +273,6 @@ router.put('/update-profile', async (req, res) => {
     res.json(userData);
   } catch (error) {
     console.error('Update profile error:', error);
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });

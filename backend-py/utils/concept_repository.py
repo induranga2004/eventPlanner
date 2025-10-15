@@ -79,7 +79,11 @@ def _disable_ai(reason: str) -> None:
 def concept_notice() -> Optional[str]:
     """Return the latest concept pipeline notice (if any)."""
 
-    return _NOTICE_MESSAGE
+    if _NOTICE_MESSAGE:
+        return _NOTICE_MESSAGE
+    if _AI_DISABLED or _env_ai_enabled():
+        return "OpenAI concept generation unavailable; using provider fallback."
+    return None
 
 
 def _collection() -> Any:
@@ -403,6 +407,13 @@ def list_concepts(limit: Optional[int] = None) -> List[Concept]:
         {"venue": 0.30, "music": 0.35, "lighting": 0.15, "sound": 0.20},  # Premium sound
     ]
     
+    if _env_ai_enabled():
+        global _AI_DISABLED
+        if not _AI_DISABLED:
+            _AI_DISABLED = True
+        if not _NOTICE_MESSAGE:
+            _set_notice("OpenAI concept generation unavailable; using provider fallback.")
+
     for i in range(requested):
         split_idx = i % len(split_variations)
         variant = Concept(

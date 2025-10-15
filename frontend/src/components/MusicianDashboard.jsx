@@ -20,6 +20,7 @@ import UpgradeModal from './UpgradeModal';
 import { me } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription, useProAccess } from '../hooks/useSubscription';
+import { buildNodeAssetUrl } from '../config/api.js';
 
 // Create Motion components
 const MotionPaper = motion.create(Paper);
@@ -501,14 +502,14 @@ const MusicianDashboard = () => {
               <PhotoGallery>
                 {user.photo && (
                   <Box component="img"
-                    src={`http://localhost:4000${user.photoBgRemoved || user.photo}`}
+                    src={buildNodeAssetUrl(user.photoBgRemoved || user.photo)}
                     alt="Primary"
                     sx={{ width: 160, height: 100, objectFit: 'cover' }}
                   />
                 )}
                 {user.additionalPhoto && (
                   <Box component="img"
-                    src={`http://localhost:4000${user.additionalPhotoBgRemoved || user.additionalPhoto}`}
+                    src={buildNodeAssetUrl(user.additionalPhotoBgRemoved || user.additionalPhoto)}
                     alt="Additional"
                     sx={{ width: 160, height: 100, objectFit: 'cover' }}
                   />

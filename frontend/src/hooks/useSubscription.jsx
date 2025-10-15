@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, createContext } from 'react';
+import { buildNodeApiUrl } from '../config/api.js';
 
 // Create Subscription Context
 const SubscriptionContext = createContext();
@@ -39,7 +40,7 @@ export const SubscriptionProvider = ({ children }) => {
       }
 
       console.log('🔍 Fetching subscription status...');
-      const response = await fetch('http://localhost:4000/api/subscription/status', {
+      const response = await fetch(buildNodeApiUrl('/subscription/status'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -111,7 +112,7 @@ export const SubscriptionProvider = ({ children }) => {
       }
 
       console.log('Making request to create checkout session...');
-      const response = await fetch('http://localhost:4000/api/subscription/create-checkout-session', {
+      const response = await fetch(buildNodeApiUrl('/subscription/create-checkout-session'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -152,7 +153,7 @@ export const SubscriptionProvider = ({ children }) => {
   const cancelSubscription = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4000/api/subscription/cancel', {
+      const response = await fetch(buildNodeApiUrl('/subscription/cancel'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -15,6 +15,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSubscription } from '../hooks/useSubscription';
+import { buildNodeApiUrl } from '../config/api.js';
 
 // Create Motion components
 const MotionBox = motion.create(Box);
@@ -96,7 +97,7 @@ const PaymentSuccess = () => {
         
         // Manual upgrade for local development
         try {
-          const upgradeResponse = await fetch('http://localhost:4000/api/subscription/manual-upgrade', {
+          const upgradeResponse = await fetch(buildNodeApiUrl('/subscription/manual-upgrade'), {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -139,7 +140,7 @@ const PaymentSuccess = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4000/api/subscription/manual-upgrade', {
+      const response = await fetch(buildNodeApiUrl('/subscription/manual-upgrade'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
