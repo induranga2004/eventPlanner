@@ -45,6 +45,26 @@ const steps = [
   'Download',
 ];
 
+// Hardcoded fallback images for manual editing
+const FALLBACK_EDITOR_IMAGES = [
+  'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800', // Concert crowd
+  'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800', // Stage lights
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800', // DJ performance
+  'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800', // Festival crowd
+  'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800', // Live band
+  'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800', // Concert hall
+  'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800', // Stage performance
+  'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800', // Music festival
+  'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800', // Concert night
+  'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800', // Music event
+];
+
+// Get random image from fallback array
+const getRandomEditorImage = () => {
+  const randomIndex = Math.floor(Math.random() * FALLBACK_EDITOR_IMAGES.length);
+  return FALLBACK_EDITOR_IMAGES[randomIndex];
+};
+
 export default function AIPosterWizard() {
   const { eventData, loadEventData } = useEventPlanning();
   const [activeStep, setActiveStep] = useState(0);
@@ -56,10 +76,10 @@ export default function AIPosterWizard() {
   const [campaignId, setCampaignId] = useState(null);
   const [backgrounds, setBackgrounds] = useState([]);
   const [selectedBackground, setSelectedBackground] = useState(null);
-  // Initialize with hardcoded fallback image - no loading needed
+  // Initialize with random hardcoded fallback image - no loading needed
   const [harmonizedImages, setHarmonizedImages] = useState([
     {
-      image_url: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800',
+      image_url: getRandomEditorImage(),
       model: 'manual_editing',
       prompt: 'Ready for manual editing'
     }
