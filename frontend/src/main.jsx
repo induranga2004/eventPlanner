@@ -36,6 +36,9 @@ const Health = React.lazy(() => import('./pages/Health.jsx'))
 const Wizard = React.lazy(() => import('./pages/Wizard.jsx'))
 const AIPosterWizard = React.lazy(() => import('./pages/AIPosterWizard.jsx'))
 
+// Social Sharing page
+const AutoShare = React.lazy(() => import('./pages/AutoShare.jsx'))
+
 const RootRedirect = () => {
   const navigate = useNavigate()
 
@@ -81,6 +84,8 @@ const router = createBrowserRouter([
   { path: '/ai-poster-wizard', element: <AIPosterWizard /> },
   { path: '/health', element: <Health /> },
   { path: '/design', element: <Editor /> },
+  // Social Sharing route
+  { path: '/auto-share', element: <AutoShare /> },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(
