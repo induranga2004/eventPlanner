@@ -129,8 +129,8 @@ export default function AutoShare() {
               <TextField label="Ticket Price" name="price" value={form.price} onChange={onChange} fullWidth required
                 InputProps={{ startAdornment: <InputAdornment position="start">💵</InputAdornment> }} />
               <TextField label="Audience" name="audience" value={form.audience} onChange={onChange} fullWidth required />
-              <TextField label="Poster Image URL" name="photoUrl" value={form.photoUrl} onChange={onChange} fullWidth required
-                InputProps={{ startAdornment: <InputAdornment position="start"><ImageIcon fontSize="small" /></InputAdornment> }} />
+              {/* Hidden input for photoUrl - auto-populated from AI Wizard */}
+              <input type="hidden" name="photoUrl" value={form.photoUrl} />
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <Button onClick={handleSubmit} variant="contained" startIcon={<SaveIcon />} disabled={loading} fullWidth>
                   {loading ? <CircularProgress size={18} color="inherit" /> : 'Submit'}
@@ -141,7 +141,7 @@ export default function AutoShare() {
           <Grid item xs={12} md={5}>
             {preview ? (
               <Box>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Preview</Typography>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Poster Preview</Typography>
                 <Paper variant="outlined" sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
                   <Box
                     component="img"
@@ -153,7 +153,9 @@ export default function AutoShare() {
                 </Paper>
               </Box>
             ) : (
-              <Typography variant="body2" color="text.secondary">Enter a public image URL to see a preview here.</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Poster image will appear here when loaded from AI Wizard
+              </Typography>
             )}
               <Divider sx={{ my: 2 }} />
               {result && (
