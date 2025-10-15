@@ -8,53 +8,57 @@ client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 
 def _deterministic_captions(event):
-    name = event.get("name", "Your Event")
-    date = event.get("date", "soon")
-    venue = event.get("venue", "our venue")
+    """Generate beautiful captions with emojis and simple English."""
+    name = event.get("name", "Event")
+    date = event.get("date", "")
+    venue = event.get("venue", "")
+    price = event.get("price", "")
+    
+    # Beautiful format with emojis and simple English
+    caption_parts = []
+    
+    # Event name with celebration emoji
+    if name:
+        caption_parts.append(f"🎉 {name}")
+    
+    # Date with calendar emoji
+    if date:
+        caption_parts.append(f"📅 {date}")
+    
+    # Venue with location emoji
+    if venue:
+        caption_parts.append(f"📍 {venue}")
+    
+    # Price with ticket emoji
+    if price:
+        caption_parts.append(f"🎫 {price}")
+    
+    # Join with newlines for readability
+    caption = "\n".join(caption_parts)
+    
+    # Add a call-to-action at the end
+    if caption:
+        caption += "\n\n✨ Don't miss out!"
+    
+    # Ensure it's under Mastodon's 500 char limit
+    if len(caption) > 400:
+        # Remove call-to-action if too long
+        caption = "\n".join(caption_parts)
+    
+    if len(caption) > 450:
+        # Truncate if still too long
+        caption = caption[:450]
+    
     return {
-        "instagram": f"🎉 {name} on {date} at {venue}! Grab your tickets now! #Event #{name.replace(' ', '')}",
-        "facebook": f"Join us for {name} on {date} at {venue}. Don't miss out!",
-        "linkedin": f"Excited to announce {name} happening on {date} at {venue}.",
-        "twitter": f"{name} on {date} at {venue}!",
+        "instagram": caption,
+        "facebook": caption,
+        "linkedin": caption,
+        "twitter": caption[:280],
+        "mastodon": caption,
     }
 
 
 def generate_captions(event):
-    # Demo mode: never call OpenAI
-    if DEMO_MODE:
-        return _deterministic_captions(event)
-
-    # No API key: gracefully fall back instead of raising
-    if not client:
-        logger.warning("OPENAI_API_KEY missing; using deterministic captions fallback")
-        return _deterministic_captions(event)
-
-    prompt = f"""
-    Generate social media captions for this event:
-
-    Event: {event['name']}
-    Date: {event['date']}
-    Venue: {event['venue']}
-    Ticket Price: {event['price']}
-    Audience: {event['audience']}
-
-    Rules:
-    - Instagram: emojis + hashtags
-    - Facebook: storytelling
-    - LinkedIn: professional
-    - Twitter: max 240 chars
-    Return JSON.
-    """
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-        )
-        try:
-            return json.loads(resp.choices[0].message.content)
-        except Exception:
-            return {"instagram": resp.choices[0].message.content}
-    except Exception as e:
-        # Handle 429 billing_not_active and any other OpenAI errors by falling back
-        logger.error("OpenAI caption generation failed; falling back. Error: %s", getattr(e, "message", str(e)))
-        return _deterministic_captions(event)
+    """Generate simple captions without AI - always use deterministic version."""
+    # ALWAYS use simple captions (no AI)
+    return _deterministic_captions(event)

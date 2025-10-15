@@ -251,6 +251,7 @@ if SOCIAL_SHARING_AVAILABLE:
     @app.post("/auto-share", summary="Auto-generate caption and share")
     def auto_share(input: AutoShareInput):
         """Automatically generate captions and share to social media."""
+        import traceback
         try:
             event = {
                 "name": input.name,
@@ -259,12 +260,28 @@ if SOCIAL_SHARING_AVAILABLE:
                 "price": input.price,
                 "audience": input.audience,
             }
+            logger.info(f"Auto-share request for event: {input.name}")
+            logger.info(f"Photo URL: {input.photo_url}")
+            
             captions = generate_captions(event)
-            caption = captions.get("instagram", "Enjoy the event!")
+            # Use platform-specific caption (Mastodon has 500 char limit, Instagram 2200)
+            from config.config import SHARE_TARGET
+            target = (SHARE_TARGET or "instagram").lower()
+            caption = captions.get(target, captions.get("instagram", "Enjoy the event!"))
+            logger.info(f"Generated caption ({len(caption)} chars): {caption}")
+            
             result = share_post(input.photo_url, caption)
+            logger.info(f"Share result: {result}")
+            
             return {"caption": caption, "post_result": result}
         except Exception as e:
-            return JSONResponse(status_code=400, content={"error": str(e)})
+            logger.error(f"Auto-share error: {str(e)}")
+            logger.error(traceback.format_exc())
+            return JSONResponse(status_code=400, content={
+                "error": str(e),
+                "type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            })
 
     @app.get("/mastodon/verify", summary="Verify Mastodon connection")
     def mastodon_verify():

@@ -11,7 +11,19 @@ from config.config import (
 )
 import os
 import mimetypes
+import tempfile
+import logging
 from urllib.parse import urlparse
+
+# Try to import Mastodon.py library
+try:
+    from mastodon import Mastodon
+    MASTODON_PY_AVAILABLE = True
+except ImportError:
+    MASTODON_PY_AVAILABLE = False
+    logging.warning("Mastodon.py not installed. Install with: pip install Mastodon.py")
+
+logger = logging.getLogger(__name__)
 
 def _share_instagram(image_url, caption):
     if DEMO_MODE:
@@ -41,90 +53,92 @@ def _share_instagram(image_url, caption):
 
 def _share_mastodon(image_url, caption):
     """
-    Upload the image to Mastodon media API, then create a status with media_ids so
-    the photo is displayed without including the raw image URL in the status text.
+    Upload the image to Mastodon using the official Mastodon.py library.
+    Downloads the image from URL (or reads local file), then uploads and posts.
     """
     if DEMO_MODE:
         time.sleep(0.2)
         return {"status": "ok", "demo": True, "target": "mastodon", "posted_with_media": True}
 
     if not (MASTODON_BASE_URL and MASTODON_ACCESS_TOKEN):
-        raise ValueError("Missing MASTODON_BASE_URL or MASTODON_ACCESS_TOKEN")
+        raise ValueError("Missing MASTODON_BASE_URL or MASTODON_ACCESS_TOKEN in .env")
 
-    base = MASTODON_BASE_URL.rstrip('/')
-    headers = {"Authorization": f"Bearer {MASTODON_ACCESS_TOKEN}"}
+    if not MASTODON_PY_AVAILABLE:
+        raise ImportError("Mastodon.py library not installed. Run: pip install Mastodon.py")
 
-    # 1) Obtain image bytes from either a remote URL or a local file path
-    is_web_url = str(image_url).strip().lower().startswith(("http://", "https://"))
-    if is_web_url:
-        img_res = requests.get(image_url, timeout=15)
-        img_res.raise_for_status()
-        content = img_res.content
-        parsed = urlparse(image_url)
-        filename = os.path.basename(parsed.path) or "image.jpg"
-        ctype = img_res.headers.get("content-type") or mimetypes.guess_type(filename)[0] or "image/jpeg"
-    else:
-        # Support Windows-style local paths or file:// URIs for local demo
-        local_path = str(image_url)
-        if local_path.lower().startswith("file://"):
-            # Strip file:// prefix
-            local_path = local_path[7:]
-        local_path = os.path.normpath(local_path)
-        if not os.path.isabs(local_path):
-            # Resolve relative to current working dir
-            local_path = os.path.abspath(local_path)
-        if not os.path.exists(local_path):
-            raise ValueError(f"Local image file not found: {local_path}")
-        with open(local_path, "rb") as f:
-            content = f.read()
-        filename = os.path.basename(local_path) or "image.jpg"
-        ctype = mimetypes.guess_type(filename)[0] or "image/jpeg"
+    # Initialize Mastodon client
+    mastodon = Mastodon(
+        access_token=MASTODON_ACCESS_TOKEN,
+        api_base_url=MASTODON_BASE_URL.rstrip('/')
+    )
 
-    files = {"file": (filename, content, ctype)}
-
-    # 2) Upload media (try v2, fallback to v1 for compatibility)
-    media_id = None
-    media_error = None
-    media_auth_unauthorized = False
-    for media_endpoint in ("/api/v2/media", "/api/v1/media"):
-        media_url = f"{base}{media_endpoint}"
-        media_res = requests.post(media_url, headers=headers, files=files, data={"description": caption[:420]})
-        if media_res.ok:
-            media_id = media_res.json().get("id")
-            break
+    # Download image to temporary file
+    temp_file = None
+    try:
+        is_web_url = str(image_url).strip().lower().startswith(("http://", "https://"))
+        
+        if is_web_url:
+            logger.info(f"Downloading image from URL: {image_url}")
+            img_res = requests.get(image_url, timeout=30)
+            img_res.raise_for_status()
+            content = img_res.content
+            logger.info(f"Downloaded {len(content)} bytes")
+            
+            # Determine file extension from URL or content-type
+            parsed = urlparse(image_url)
+            filename = os.path.basename(parsed.path) or "image.jpg"
+            ext = os.path.splitext(filename)[1] or ".jpg"
+            
+            # Save to temporary file
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+            temp_file.write(content)
+            temp_file.close()
+            image_path = temp_file.name
+            logger.info(f"Saved to temporary file: {image_path}")
         else:
-            try:
-                media_error = media_res.json()
-            except Exception:
-                media_error = {"status_code": media_res.status_code, "text": media_res.text}
-            if media_res.status_code == 401:
-                # Token likely missing write:media or instance mismatch. Try status-only fallback.
-                media_auth_unauthorized = True
-                break
-    if not media_id:
-        # Post caption-only (no path/URL) and surface the upload error in response for quick fixes
-        status_url = f"{base}/api/v1/statuses"
-        res = requests.post(status_url, headers=headers, data={"status": caption})
-        if res.ok:
-            warning = "media_upload_unauthorized" if media_auth_unauthorized else "media_upload_failed"
-            return {"warning": warning, "media_error": media_error, **res.json()}
-        # Status-only also failed — raise a targeted error if we previously saw 401 on media
-        if media_auth_unauthorized and res.status_code == 401:
-            raise requests.HTTPError(
-                "Mastodon auth failed (401) for both media upload and status post. Ensure token is for the same instance and includes write:statuses and write:media.",
-                response=res,
-            )
-        # Otherwise bubble up the status error
-        res.raise_for_status()
-        return res.json()
+            # Local file path
+            local_path = str(image_url)
+            if local_path.lower().startswith("file://"):
+                local_path = local_path[7:]
+            local_path = os.path.normpath(local_path)
+            if not os.path.isabs(local_path):
+                local_path = os.path.abspath(local_path)
+            if not os.path.exists(local_path):
+                raise ValueError(f"Local image file not found: {local_path}")
+            image_path = local_path
+            logger.info(f"Using local file: {image_path}")
 
-    # 3) Create status with attached media
-    status_url = f"{base}/api/v1/statuses"
-    # Encode media_ids[] as repeated field for compatibility
-    data = [("status", caption), ("media_ids[]", media_id)]
-    res = requests.post(status_url, headers=headers, data=data)
-    res.raise_for_status()
-    return res.json()
+        # Upload media to Mastodon
+        logger.info("Uploading media to Mastodon...")
+        media = mastodon.media_post(image_path, description=caption[:420])
+        logger.info(f"Media uploaded successfully, ID: {media['id']}")
+
+        # Post status with media
+        logger.info("Posting status with media...")
+        status = mastodon.status_post(caption, media_ids=[media])
+        logger.info(f"Status posted successfully, ID: {status['id']}")
+
+        return {
+            "status": "ok",
+            "target": "mastodon",
+            "media_id": media['id'],
+            "status_id": status['id'],
+            "url": status.get('url', ''),
+            "posted_with_media": True
+        }
+
+    except Exception as e:
+        logger.error(f"Mastodon share error: {str(e)}")
+        raise
+    
+    finally:
+        # Clean up temporary file
+        if temp_file and os.path.exists(temp_file.name):
+            try:
+                os.unlink(temp_file.name)
+                logger.info("Cleaned up temporary file")
+            except Exception as e:
+                logger.warning(f"Failed to delete temp file: {e}")
 
 
 def _share_discord(image_url, caption):
